@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application source code
+# Copy application source code and migrations
 COPY apps/api/app ./app
 COPY apps/api/migrations ./migrations
 COPY apps/api/alembic.ini .
@@ -25,5 +25,5 @@ COPY scripts ./scripts
 
 EXPOSE 8000
 
-# Start command handles Railway PORT binding automatically
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Automatically apply migrations on startup before binding uvicorn
+CMD ["sh", "-c", "PYTHONPATH=. python -m alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
