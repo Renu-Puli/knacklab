@@ -1,0 +1,425 @@
+ 
+ -------------- celery@DESKTOP-0A5KE5L v5.7.0 (collider)
+--- ***** ----- 
+-- ******* ---- Windows-11-10.0.26300-SP0 2026-11-23 00:03:21
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         analytics_worker:0x1b4c844a660
+- ** ---------- .> transport:   redis://:**@localhost:6379/0
+- ** ---------- .> results:     disabled://
+- *** --- * --- .> concurrency: 1 (solo)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . app.worker.purge_expired_clicks_task
+  . app.worker.record_click_event_task
+
+[2026-11-23 00:03:21,902: INFO/MainProcess] Connected to redis://:**@localhost:6379/0
+[2026-11-23 00:03:22,022: INFO/MainProcess] mingle: searching for neighbors
+[2026-11-23 00:03:24,381: INFO/MainProcess] mingle: all alone
+[2026-11-23 00:03:25,003: INFO/MainProcess] celery@DESKTOP-0A5KE5L ready.
+[2026-11-23 00:03:25,085: INFO/MainProcess] Task app.worker.record_click_event_task[2c0bb8aa-fb8d-4277-9b6a-5bf346c66f3d] received
+[2026-11-23 00:03:25,240: INFO/MainProcess] Task app.worker.record_click_event_task[2c0bb8aa-fb8d-4277-9b6a-5bf346c66f3d] succeeded in 0.1535403000016231s: {'status': 'recorded', 'click_event_id': 'click_req_b746f97bf58e4fd2a9eaf4f5d65ec1cf', 'link_id': 1061, 'id': 3228}
+[2026-11-23 00:03:25,266: INFO/MainProcess] Task app.worker.record_click_event_task[9c397ea8-7ef1-46dc-8d34-a9b4702f2523] received
+[2026-11-23 00:03:25,295: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_b746f97bf58e4fd2a9eaf4f5d65ec1cf
+[2026-11-23 00:03:25,298: INFO/MainProcess] Task app.worker.record_click_event_task[9c397ea8-7ef1-46dc-8d34-a9b4702f2523] succeeded in 0.030431300001509953s: {'status': 'deduplicated', 'click_event_id': 'click_req_b746f97bf58e4fd2a9eaf4f5d65ec1cf'}
+[2026-11-23 00:03:25,342: INFO/MainProcess] Task app.worker.record_click_event_task[03ff2e76-1a13-4ca8-8338-c7b2506aa901] received
+[2026-11-23 00:03:25,378: ERROR/MainProcess] Database operational error recording click event: (psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"
+DETAIL:  Key (link_id)=(1062) is not present in table "links".
+[SQL: INSERT INTO click_events (click_event_id, link_id, clicked_at, user_agent, referrer, ip_hash) VALUES (%(click_event_id)s::VARCHAR, %(link_id)s::INTEGER, %(clicked_at)s::TIMESTAMP WITH TIME ZONE, %(user_agent)s::VARCHAR, %(referrer)s::VARCHAR, %(ip_hash)s::VARCHAR) ON CONFLICT (click_event_id) DO NOTHING RETURNING click_events.id]
+[parameters: {'click_event_id': 'click_req_bbdd4d0a27a546a89ce32b9f998e8548', 'link_id': 1062, 'clicked_at': datetime.datetime(2026, 11, 22, 17, 10, 33, 115774, tzinfo=datetime.timezone.utc), 'user_agent': 'testclient', 'referrer': None, 'ip_hash': '846488f1dc5c07b4cebe5c14e0814b7b14f958f962c39ee7e5e5282c4b1e9474'}]
+(Background on this error at: https://sqlalche.me/e/21/gkpj)
+[2026-11-23 00:03:25,545: INFO/MainProcess] Task app.worker.record_click_event_task[03ff2e76-1a13-4ca8-8338-c7b2506aa901] retry: Retry in 5s: IntegrityError('(psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"\nDETAIL:  Key (link_id)=(1062) is not present in table "links".')
+[2026-11-23 00:03:25,564: INFO/MainProcess] Task app.worker.record_click_event_task[c576de8c-8edb-4c8c-8ec8-1f94e2d896ac] received
+[2026-11-23 00:03:25,590: ERROR/MainProcess] Database operational error recording click event: (psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"
+DETAIL:  Key (link_id)=(1016) is not present in table "links".
+[SQL: INSERT INTO click_events (click_event_id, link_id, clicked_at, user_agent, referrer, ip_hash) VALUES (%(click_event_id)s::VARCHAR, %(link_id)s::INTEGER, %(clicked_at)s::TIMESTAMP WITH TIME ZONE, %(user_agent)s::VARCHAR, %(referrer)s::VARCHAR, %(ip_hash)s::VARCHAR) ON CONFLICT (click_event_id) DO NOTHING RETURNING click_events.id]
+[parameters: {'click_event_id': 'click_req_bbdd4d0a27a546a89ce32b9f998e8548', 'link_id': 1016, 'clicked_at': datetime.datetime(2026, 11, 22, 17, 10, 34, 545625, tzinfo=datetime.timezone.utc), 'user_agent': 'testclient', 'referrer': None, 'ip_hash': '846488f1dc5c07b4cebe5c14e0814b7b14f958f962c39ee7e5e5282c4b1e9474'}]
+(Background on this error at: https://sqlalche.me/e/21/gkpj)
+[2026-11-23 00:03:25,652: INFO/MainProcess] Task app.worker.record_click_event_task[c576de8c-8edb-4c8c-8ec8-1f94e2d896ac] retry: Retry in 5s: IntegrityError('(psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"\nDETAIL:  Key (link_id)=(1016) is not present in table "links".')
+[2026-11-23 00:03:25,671: INFO/MainProcess] Task app.worker.record_click_event_task[e887d2a5-2bc3-429d-a418-4cbf72876f13] received
+[2026-11-23 00:03:25,702: ERROR/MainProcess] Database operational error recording click event: (psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"
+DETAIL:  Key (link_id)=(1129) is not present in table "links".
+[SQL: INSERT INTO click_events (click_event_id, link_id, clicked_at, user_agent, referrer, ip_hash) VALUES (%(click_event_id)s::VARCHAR, %(link_id)s::INTEGER, %(clicked_at)s::TIMESTAMP WITH TIME ZONE, %(user_agent)s::VARCHAR, %(referrer)s::VARCHAR, %(ip_hash)s::VARCHAR) ON CONFLICT (click_event_id) DO NOTHING RETURNING click_events.id]
+[parameters: {'click_event_id': 'click_req_1661e295b4344c77a40945fca1df7d16', 'link_id': 1129, 'clicked_at': datetime.datetime(2026, 11, 22, 17, 14, 15, 869180, tzinfo=datetime.timezone.utc), 'user_agent': 'python-httpx/0.28.1', 'referrer': None, 'ip_hash': '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0'}]
+(Background on this error at: https://sqlalche.me/e/21/gkpj)
+[2026-11-23 00:03:25,772: INFO/MainProcess] Task app.worker.record_click_event_task[e887d2a5-2bc3-429d-a418-4cbf72876f13] retry: Retry in 5s: IntegrityError('(psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"\nDETAIL:  Key (link_id)=(1129) is not present in table "links".')
+[2026-11-23 00:03:25,800: INFO/MainProcess] Task app.worker.record_click_event_task[3512ca3f-eec5-4d39-928d-6e7dc5e9e334] received
+[2026-11-23 00:03:25,839: ERROR/MainProcess] Database operational error recording click event: (psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"
+DETAIL:  Key (link_id)=(1129) is not present in table "links".
+[SQL: INSERT INTO click_events (click_event_id, link_id, clicked_at, user_agent, referrer, ip_hash) VALUES (%(click_event_id)s::VARCHAR, %(link_id)s::INTEGER, %(clicked_at)s::TIMESTAMP WITH TIME ZONE, %(user_agent)s::VARCHAR, %(referrer)s::VARCHAR, %(ip_hash)s::VARCHAR) ON CONFLICT (click_event_id) DO NOTHING RETURNING click_events.id]
+[parameters: {'click_event_id': 'click_req_1661e295b4344c77a40945fca1df7d16', 'link_id': 1129, 'clicked_at': datetime.datetime(2026, 11, 22, 17, 14, 16, 974737, tzinfo=datetime.timezone.utc), 'user_agent': 'python-httpx/0.28.1', 'referrer': None, 'ip_hash': '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0'}]
+(Background on this error at: https://sqlalche.me/e/21/gkpj)
+[2026-11-23 00:03:25,918: INFO/MainProcess] Task app.worker.record_click_event_task[3512ca3f-eec5-4d39-928d-6e7dc5e9e334] retry: Retry in 5s: IntegrityError('(psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"\nDETAIL:  Key (link_id)=(1129) is not present in table "links".')
+[2026-11-23 00:03:25,945: INFO/MainProcess] Task app.worker.record_click_event_task[8cf925e8-0160-4fc0-ac52-b80cfb49c53c] received
+[2026-11-23 00:03:25,978: ERROR/MainProcess] Database operational error recording click event: (psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"
+DETAIL:  Key (link_id)=(1129) is not present in table "links".
+[SQL: INSERT INTO click_events (click_event_id, link_id, clicked_at, user_agent, referrer, ip_hash) VALUES (%(click_event_id)s::VARCHAR, %(link_id)s::INTEGER, %(clicked_at)s::TIMESTAMP WITH TIME ZONE, %(user_agent)s::VARCHAR, %(referrer)s::VARCHAR, %(ip_hash)s::VARCHAR) ON CONFLICT (click_event_id) DO NOTHING RETURNING click_events.id]
+[parameters: {'click_event_id': 'click_req_2407d5d0af1e48c7baf14a90b49c69cb', 'link_id': 1129, 'clicked_at': datetime.datetime(2026, 11, 22, 17, 14, 17, 84734, tzinfo=datetime.timezone.utc), 'user_agent': 'python-httpx/0.28.1', 'referrer': None, 'ip_hash': '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0'}]
+(Background on this error at: https://sqlalche.me/e/21/gkpj)
+[2026-11-23 00:03:26,035: INFO/MainProcess] Task app.worker.record_click_event_task[8cf925e8-0160-4fc0-ac52-b80cfb49c53c] retry: Retry in 5s: IntegrityError('(psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"\nDETAIL:  Key (link_id)=(1129) is not present in table "links".')
+[2026-11-23 00:03:26,055: INFO/MainProcess] Task app.worker.record_click_event_task[59bd7e4c-234d-4d62-8974-b4c189c7f177] received
+[2026-11-23 00:03:26,077: ERROR/MainProcess] Database operational error recording click event: (psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"
+DETAIL:  Key (link_id)=(1129) is not present in table "links".
+[SQL: INSERT INTO click_events (click_event_id, link_id, clicked_at, user_agent, referrer, ip_hash) VALUES (%(click_event_id)s::VARCHAR, %(link_id)s::INTEGER, %(clicked_at)s::TIMESTAMP WITH TIME ZONE, %(user_agent)s::VARCHAR, %(referrer)s::VARCHAR, %(ip_hash)s::VARCHAR) ON CONFLICT (click_event_id) DO NOTHING RETURNING click_events.id]
+[parameters: {'click_event_id': 'click_req_2407d5d0af1e48c7baf14a90b49c69cb', 'link_id': 1129, 'clicked_at': datetime.datetime(2026, 11, 22, 17, 14, 17, 123155, tzinfo=datetime.timezone.utc), 'user_agent': 'python-httpx/0.28.1', 'referrer': None, 'ip_hash': '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0'}]
+(Background on this error at: https://sqlalche.me/e/21/gkpj)
+[2026-11-23 00:03:26,135: INFO/MainProcess] Task app.worker.record_click_event_task[59bd7e4c-234d-4d62-8974-b4c189c7f177] retry: Retry in 5s: IntegrityError('(psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"\nDETAIL:  Key (link_id)=(1129) is not present in table "links".')
+[2026-11-23 00:03:26,165: INFO/MainProcess] Task app.worker.record_click_event_task[dc8ed27b-02a7-469b-be46-415b41cd9471] received
+[2026-11-23 00:03:26,198: ERROR/MainProcess] Database operational error recording click event: (psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"
+DETAIL:  Key (link_id)=(1129) is not present in table "links".
+[SQL: INSERT INTO click_events (click_event_id, link_id, clicked_at, user_agent, referrer, ip_hash) VALUES (%(click_event_id)s::VARCHAR, %(link_id)s::INTEGER, %(clicked_at)s::TIMESTAMP WITH TIME ZONE, %(user_agent)s::VARCHAR, %(referrer)s::VARCHAR, %(ip_hash)s::VARCHAR) ON CONFLICT (click_event_id) DO NOTHING RETURNING click_events.id]
+[parameters: {'click_event_id': 'click_req_a3386b29a7134f69906f6c5d5e19ac56', 'link_id': 1129, 'clicked_at': datetime.datetime(2026, 11, 22, 17, 14, 17, 547967, tzinfo=datetime.timezone.utc), 'user_agent': 'python-httpx/0.28.1', 'referrer': None, 'ip_hash': '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0'}]
+(Background on this error at: https://sqlalche.me/e/21/gkpj)
+[2026-11-23 00:03:26,270: INFO/MainProcess] Task app.worker.record_click_event_task[dc8ed27b-02a7-469b-be46-415b41cd9471] retry: Retry in 5s: IntegrityError('(psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"\nDETAIL:  Key (link_id)=(1129) is not present in table "links".')
+[2026-11-23 00:03:26,291: INFO/MainProcess] Task app.worker.record_click_event_task[0a3f59a9-1358-413b-a81a-4463f51e51e8] received
+[2026-11-23 00:03:26,315: ERROR/MainProcess] Database operational error recording click event: (psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"
+DETAIL:  Key (link_id)=(1129) is not present in table "links".
+[SQL: INSERT INTO click_events (click_event_id, link_id, clicked_at, user_agent, referrer, ip_hash) VALUES (%(click_event_id)s::VARCHAR, %(link_id)s::INTEGER, %(clicked_at)s::TIMESTAMP WITH TIME ZONE, %(user_agent)s::VARCHAR, %(referrer)s::VARCHAR, %(ip_hash)s::VARCHAR) ON CONFLICT (click_event_id) DO NOTHING RETURNING click_events.id]
+[parameters: {'click_event_id': 'click_req_a3386b29a7134f69906f6c5d5e19ac56', 'link_id': 1129, 'clicked_at': datetime.datetime(2026, 11, 22, 17, 14, 17, 608237, tzinfo=datetime.timezone.utc), 'user_agent': 'python-httpx/0.28.1', 'referrer': None, 'ip_hash': '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0'}]
+(Background on this error at: https://sqlalche.me/e/21/gkpj)
+[2026-11-23 00:03:26,363: INFO/MainProcess] Task app.worker.record_click_event_task[0a3f59a9-1358-413b-a81a-4463f51e51e8] retry: Retry in 5s: IntegrityError('(psycopg.errors.ForeignKeyViolation) insert or update on table "click_events" violates foreign key constraint "click_events_link_id_fkey"\nDETAIL:  Key (link_id)=(1129) is not present in table "links".')
+[2026-11-23 00:03:26,381: INFO/MainProcess] Task app.worker.record_click_event_task[059ec983-d895-424a-b159-04c3b583b378] received
+[2026-11-23 00:03:26,416: INFO/MainProcess] Task app.worker.record_click_event_task[059ec983-d895-424a-b159-04c3b583b378] succeeded in 0.034094199996616226s: {'status': 'recorded', 'click_event_id': 'click_req_87b3cd4be1c4459eacc2eed4356de304', 'link_id': 1130, 'id': 3238}
+[2026-11-23 00:03:26,442: INFO/MainProcess] Task app.worker.record_click_event_task[6a52132e-7cd0-4d63-b704-f2a9a94fbeb1] received
+[2026-11-23 00:03:26,465: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_87b3cd4be1c4459eacc2eed4356de304
+[2026-11-23 00:03:26,466: INFO/MainProcess] Task app.worker.record_click_event_task[6a52132e-7cd0-4d63-b704-f2a9a94fbeb1] succeeded in 0.02243820000148844s: {'status': 'deduplicated', 'click_event_id': 'click_req_87b3cd4be1c4459eacc2eed4356de304'}
+[2026-11-23 00:03:26,484: INFO/MainProcess] Task app.worker.record_click_event_task[61ad63b8-27ca-48da-a2d4-b56781b1a947] received
+[2026-11-23 00:03:26,511: INFO/MainProcess] Task app.worker.record_click_event_task[61ad63b8-27ca-48da-a2d4-b56781b1a947] succeeded in 0.026465900002222043s: {'status': 'recorded', 'click_event_id': 'click_req_93f1de598f9441a4ab8c34bfc6dacd15', 'link_id': 1131, 'id': 3240}
+[2026-11-23 00:03:26,529: INFO/MainProcess] Task app.worker.record_click_event_task[c4b0c49a-0026-4ee1-a391-9f753904aaa6] received
+[2026-11-23 00:03:26,552: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_93f1de598f9441a4ab8c34bfc6dacd15
+[2026-11-23 00:03:26,553: INFO/MainProcess] Task app.worker.record_click_event_task[c4b0c49a-0026-4ee1-a391-9f753904aaa6] succeeded in 0.02296840000053635s: {'status': 'deduplicated', 'click_event_id': 'click_req_93f1de598f9441a4ab8c34bfc6dacd15'}
+[2026-11-23 00:03:26,571: INFO/MainProcess] Task app.worker.record_click_event_task[6a9f4121-4579-4a41-8e29-cefdd71fe0dc] received
+[2026-11-23 00:03:26,598: INFO/MainProcess] Task app.worker.record_click_event_task[6a9f4121-4579-4a41-8e29-cefdd71fe0dc] succeeded in 0.026085500001499895s: {'status': 'recorded', 'click_event_id': 'click_req_17ad1dbdf8c145ef820049b0dde2057f', 'link_id': 1132, 'id': 3242}
+[2026-11-23 00:03:26,679: INFO/MainProcess] Task app.worker.record_click_event_task[00728bb0-832e-478a-b6bd-7d43f435b9c3] received
+[2026-11-23 00:03:26,705: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_17ad1dbdf8c145ef820049b0dde2057f
+[2026-11-23 00:03:26,706: INFO/MainProcess] Task app.worker.record_click_event_task[00728bb0-832e-478a-b6bd-7d43f435b9c3] succeeded in 0.025654500001110137s: {'status': 'deduplicated', 'click_event_id': 'click_req_17ad1dbdf8c145ef820049b0dde2057f'}
+[2026-11-23 00:03:26,727: INFO/MainProcess] Task app.worker.record_click_event_task[c355871e-5f22-4e4c-b6be-9342add8bb0b] received
+[2026-11-23 00:03:26,755: INFO/MainProcess] Task app.worker.record_click_event_task[c355871e-5f22-4e4c-b6be-9342add8bb0b] succeeded in 0.026278400000592228s: {'status': 'recorded', 'click_event_id': 'click_req_a2d16bd7e9fb46d2a73478181993402f', 'link_id': 1132, 'id': 3244}
+[2026-11-23 00:03:26,774: INFO/MainProcess] Task app.worker.record_click_event_task[9bba2372-4e65-45f0-b7b6-73a0dccf46ba] received
+[2026-11-23 00:03:26,801: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_a2d16bd7e9fb46d2a73478181993402f
+[2026-11-23 00:03:26,802: INFO/MainProcess] Task app.worker.record_click_event_task[9bba2372-4e65-45f0-b7b6-73a0dccf46ba] succeeded in 0.02627819999906933s: {'status': 'deduplicated', 'click_event_id': 'click_req_a2d16bd7e9fb46d2a73478181993402f'}
+[2026-11-23 00:03:26,822: INFO/MainProcess] Task app.worker.record_click_event_task[300343ab-29f7-434a-86f7-0f8bb46f3aec] received
+[2026-11-23 00:03:26,851: INFO/MainProcess] Task app.worker.record_click_event_task[300343ab-29f7-434a-86f7-0f8bb46f3aec] succeeded in 0.027515900001162663s: {'status': 'recorded', 'click_event_id': 'worker_test_609496d6aa264e0dada942d6e17ac1e1', 'link_id': 1132, 'id': 3246}
+[2026-11-23 00:03:26,868: INFO/MainProcess] Task app.worker.record_click_event_task[0a3c7968-9f59-44b3-8b76-318ab2bf22cd] received
+[2026-11-23 00:03:26,890: INFO/MainProcess] Task app.worker.record_click_event_task[0a3c7968-9f59-44b3-8b76-318ab2bf22cd] succeeded in 0.021017200000642333s: {'status': 'recorded', 'click_event_id': 'click_req_fbb257678e054303bf5a5d013538ad3d', 'link_id': 1134, 'id': 3247}
+[2026-11-23 00:03:26,906: INFO/MainProcess] Task app.worker.record_click_event_task[bb91d3b7-0a25-4e4d-bea0-c1c285e7791c] received
+[2026-11-23 00:03:26,924: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_fbb257678e054303bf5a5d013538ad3d
+[2026-11-23 00:03:26,925: INFO/MainProcess] Task app.worker.record_click_event_task[bb91d3b7-0a25-4e4d-bea0-c1c285e7791c] succeeded in 0.01772819999314379s: {'status': 'deduplicated', 'click_event_id': 'click_req_fbb257678e054303bf5a5d013538ad3d'}
+[2026-11-23 00:03:26,940: INFO/MainProcess] Task app.worker.record_click_event_task[f743ee52-5cea-4134-a229-6d87c9494374] received
+[2026-11-23 00:03:26,971: INFO/MainProcess] Task app.worker.record_click_event_task[f743ee52-5cea-4134-a229-6d87c9494374] succeeded in 0.030183599999872968s: {'status': 'recorded', 'click_event_id': 'click_req_53e02aa238924c4ab117426df91a5537', 'link_id': 1134, 'id': 3249}
+[2026-11-23 00:03:26,986: INFO/MainProcess] Task app.worker.record_click_event_task[bce89867-9491-400f-af0c-ed50f861296f] received
+[2026-11-23 00:03:27,001: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_53e02aa238924c4ab117426df91a5537
+[2026-11-23 00:03:27,002: INFO/MainProcess] Task app.worker.record_click_event_task[bce89867-9491-400f-af0c-ed50f861296f] succeeded in 0.01554059999762103s: {'status': 'deduplicated', 'click_event_id': 'click_req_53e02aa238924c4ab117426df91a5537'}
+[2026-11-23 00:03:27,016: INFO/MainProcess] Task app.worker.record_click_event_task[0a65d925-82b8-476b-9d5e-2705e56c3c82] received
+[2026-11-23 00:03:27,035: INFO/MainProcess] Task app.worker.record_click_event_task[0a65d925-82b8-476b-9d5e-2705e56c3c82] succeeded in 0.019024799999897368s: {'status': 'recorded', 'click_event_id': 'click_req_3500b40bf26147f78bac29014836f1b1', 'link_id': 1134, 'id': 3251}
+[2026-11-23 00:03:27,049: INFO/MainProcess] Task app.worker.record_click_event_task[b2a00296-8210-44bf-9a81-2917e200b08a] received
+[2026-11-23 00:03:27,064: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_3500b40bf26147f78bac29014836f1b1
+[2026-11-23 00:03:27,065: INFO/MainProcess] Task app.worker.record_click_event_task[b2a00296-8210-44bf-9a81-2917e200b08a] succeeded in 0.01473930000065593s: {'status': 'deduplicated', 'click_event_id': 'click_req_3500b40bf26147f78bac29014836f1b1'}
+[2026-11-23 00:03:27,078: INFO/MainProcess] Task app.worker.record_click_event_task[59af2b57-e062-407a-99d4-48add8e46a2b] received
+[2026-11-23 00:03:27,097: INFO/MainProcess] Task app.worker.record_click_event_task[59af2b57-e062-407a-99d4-48add8e46a2b] succeeded in 0.018217199998616707s: {'status': 'recorded', 'click_event_id': 'click_req_56ff4f06ee56475994686d3397aa394a', 'link_id': 1134, 'id': 3253}
+[2026-11-23 00:03:27,111: INFO/MainProcess] Task app.worker.record_click_event_task[ac8c30ba-9ab1-4a48-8afb-02abe4533ade] received
+[2026-11-23 00:03:27,127: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_56ff4f06ee56475994686d3397aa394a
+[2026-11-23 00:03:27,128: INFO/MainProcess] Task app.worker.record_click_event_task[ac8c30ba-9ab1-4a48-8afb-02abe4533ade] succeeded in 0.016366399999242276s: {'status': 'deduplicated', 'click_event_id': 'click_req_56ff4f06ee56475994686d3397aa394a'}
+[2026-11-23 00:03:27,142: INFO/MainProcess] Task app.worker.record_click_event_task[f99a2965-2466-41a7-bc88-ae39f07927cf] received
+[2026-11-23 00:03:27,168: INFO/MainProcess] Task app.worker.record_click_event_task[f99a2965-2466-41a7-bc88-ae39f07927cf] succeeded in 0.02494519999891054s: {'status': 'recorded', 'click_event_id': 'click_req_b5f89da169764d0eae38dc20bd1503f9', 'link_id': 1134, 'id': 3255}
+[2026-11-23 00:03:27,191: INFO/MainProcess] Task app.worker.record_click_event_task[4d560d28-df01-478c-b27c-8525775b5d40] received
+[2026-11-23 00:03:27,217: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_b5f89da169764d0eae38dc20bd1503f9
+[2026-11-23 00:03:27,218: INFO/MainProcess] Task app.worker.record_click_event_task[4d560d28-df01-478c-b27c-8525775b5d40] succeeded in 0.02442919999884907s: {'status': 'deduplicated', 'click_event_id': 'click_req_b5f89da169764d0eae38dc20bd1503f9'}
+[2026-11-23 00:03:27,240: INFO/MainProcess] Task app.worker.record_click_event_task[2b4b07f9-e369-4d01-b084-ed92c6c6bb7d] received
+[2026-11-23 00:03:27,269: INFO/MainProcess] Task app.worker.record_click_event_task[2b4b07f9-e369-4d01-b084-ed92c6c6bb7d] succeeded in 0.02817740000318736s: {'status': 'recorded', 'click_event_id': 'click_req_acd7e2df70d84da38c2ac204870c8fee', 'link_id': 1134, 'id': 3257}
+[2026-11-23 00:03:27,290: INFO/MainProcess] Task app.worker.record_click_event_task[223c4fdf-3eb5-46f9-b153-3d6b060acff5] received
+[2026-11-23 00:03:27,311: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_acd7e2df70d84da38c2ac204870c8fee
+[2026-11-23 00:03:27,313: INFO/MainProcess] Task app.worker.record_click_event_task[223c4fdf-3eb5-46f9-b153-3d6b060acff5] succeeded in 0.022207400004845113s: {'status': 'deduplicated', 'click_event_id': 'click_req_acd7e2df70d84da38c2ac204870c8fee'}
+[2026-11-23 00:03:27,332: INFO/MainProcess] Task app.worker.record_click_event_task[eda54d2a-22ce-4d71-81ae-c1a6101f2d41] received
+[2026-11-23 00:03:27,356: INFO/MainProcess] Task app.worker.record_click_event_task[eda54d2a-22ce-4d71-81ae-c1a6101f2d41] succeeded in 0.02256140000099549s: {'status': 'recorded', 'click_event_id': 'click_req_9fafd6b9cd1a4bc397bde30111cbea39', 'link_id': 1134, 'id': 3259}
+[2026-11-23 00:03:27,371: INFO/MainProcess] Task app.worker.record_click_event_task[2f60615d-a230-41cb-a218-1a3d151e514d] received
+[2026-11-23 00:03:27,386: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_9fafd6b9cd1a4bc397bde30111cbea39
+[2026-11-23 00:03:27,387: INFO/MainProcess] Task app.worker.record_click_event_task[2f60615d-a230-41cb-a218-1a3d151e514d] succeeded in 0.015250100004777778s: {'status': 'deduplicated', 'click_event_id': 'click_req_9fafd6b9cd1a4bc397bde30111cbea39'}
+[2026-11-23 00:03:27,400: INFO/MainProcess] Task app.worker.record_click_event_task[603f9737-3718-41db-a7b4-615a2289bf4c] received
+[2026-11-23 00:03:27,419: INFO/MainProcess] Task app.worker.record_click_event_task[603f9737-3718-41db-a7b4-615a2289bf4c] succeeded in 0.01827140000386862s: {'status': 'recorded', 'click_event_id': 'click_req_7e57e8e60bf8400196dcaf958f8549de', 'link_id': 1134, 'id': 3261}
+[2026-11-23 00:03:27,434: INFO/MainProcess] Task app.worker.record_click_event_task[b9f787ba-f2cb-4385-a247-117515adc864] received
+[2026-11-23 00:03:27,451: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_7e57e8e60bf8400196dcaf958f8549de
+[2026-11-23 00:03:27,452: INFO/MainProcess] Task app.worker.record_click_event_task[b9f787ba-f2cb-4385-a247-117515adc864] succeeded in 0.017008299997542053s: {'status': 'deduplicated', 'click_event_id': 'click_req_7e57e8e60bf8400196dcaf958f8549de'}
+[2026-11-23 00:03:27,468: INFO/MainProcess] Task app.worker.record_click_event_task[3405ace2-8de8-4c93-b905-c2b5e7049890] received
+[2026-11-23 00:03:27,487: INFO/MainProcess] Task app.worker.record_click_event_task[3405ace2-8de8-4c93-b905-c2b5e7049890] succeeded in 0.018306300000404008s: {'status': 'recorded', 'click_event_id': 'click_req_63fa12f3937a46c6acb5d3d2fcb130d6', 'link_id': 1134, 'id': 3263}
+[2026-11-23 00:03:27,499: INFO/MainProcess] Task app.worker.record_click_event_task[debbad85-db6c-41f5-8b63-a6cf16fd1362] received
+[2026-11-23 00:03:27,513: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_63fa12f3937a46c6acb5d3d2fcb130d6
+[2026-11-23 00:03:27,514: INFO/MainProcess] Task app.worker.record_click_event_task[debbad85-db6c-41f5-8b63-a6cf16fd1362] succeeded in 0.013916500000050291s: {'status': 'deduplicated', 'click_event_id': 'click_req_63fa12f3937a46c6acb5d3d2fcb130d6'}
+[2026-11-23 00:03:27,527: INFO/MainProcess] Task app.worker.record_click_event_task[5fe1afae-f4c4-494b-9fcd-3c6b96f00dc6] received
+[2026-11-23 00:03:27,548: INFO/MainProcess] Task app.worker.record_click_event_task[5fe1afae-f4c4-494b-9fcd-3c6b96f00dc6] succeeded in 0.020258300006389618s: {'status': 'recorded', 'click_event_id': 'click_req_89a71ae718d4455399f9db5fe642c8b1', 'link_id': 1134, 'id': 3265}
+[2026-11-23 00:03:27,562: INFO/MainProcess] Task app.worker.record_click_event_task[c8ed00b4-c074-4ad0-a223-3021260c65af] received
+[2026-11-23 00:03:27,579: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_89a71ae718d4455399f9db5fe642c8b1
+[2026-11-23 00:03:27,580: INFO/MainProcess] Task app.worker.record_click_event_task[c8ed00b4-c074-4ad0-a223-3021260c65af] succeeded in 0.016726400004699826s: {'status': 'deduplicated', 'click_event_id': 'click_req_89a71ae718d4455399f9db5fe642c8b1'}
+[2026-11-23 00:03:27,593: INFO/MainProcess] Task app.worker.record_click_event_task[b4077072-e9eb-4b58-a618-acea9e925365] received
+[2026-11-23 00:03:27,612: INFO/MainProcess] Task app.worker.record_click_event_task[b4077072-e9eb-4b58-a618-acea9e925365] succeeded in 0.018188599999120925s: {'status': 'recorded', 'click_event_id': 'click_req_f73710e800bd4890b388b58b08a0404f', 'link_id': 1134, 'id': 3267}
+[2026-11-23 00:03:27,625: INFO/MainProcess] Task app.worker.record_click_event_task[31ccb2d7-bfc8-47e0-ad58-3ee7b679b827] received
+[2026-11-23 00:03:27,640: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_f73710e800bd4890b388b58b08a0404f
+[2026-11-23 00:03:27,641: INFO/MainProcess] Task app.worker.record_click_event_task[31ccb2d7-bfc8-47e0-ad58-3ee7b679b827] succeeded in 0.01449020000291057s: {'status': 'deduplicated', 'click_event_id': 'click_req_f73710e800bd4890b388b58b08a0404f'}
+[2026-11-23 00:03:27,653: INFO/MainProcess] Task app.worker.record_click_event_task[bcc9535f-2905-4af6-9b92-0bb4eaa1a978] received
+[2026-11-23 00:03:27,673: INFO/MainProcess] Task app.worker.record_click_event_task[bcc9535f-2905-4af6-9b92-0bb4eaa1a978] succeeded in 0.01835699999355711s: {'status': 'recorded', 'click_event_id': 'click_req_80cf3b62546748ce8ee913ae4020d89c', 'link_id': 1134, 'id': 3269}
+[2026-11-23 00:03:27,686: INFO/MainProcess] Task app.worker.record_click_event_task[c22626e7-b6de-473d-a66a-4f1b47d737b3] received
+[2026-11-23 00:03:27,701: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_80cf3b62546748ce8ee913ae4020d89c
+[2026-11-23 00:03:27,702: INFO/MainProcess] Task app.worker.record_click_event_task[c22626e7-b6de-473d-a66a-4f1b47d737b3] succeeded in 0.014779199998883996s: {'status': 'deduplicated', 'click_event_id': 'click_req_80cf3b62546748ce8ee913ae4020d89c'}
+[2026-11-23 00:03:27,714: INFO/MainProcess] Task app.worker.record_click_event_task[10a31a31-6fd5-49d0-8ed3-87cb3955f5c7] received
+[2026-11-23 00:03:27,729: INFO/MainProcess] Task app.worker.record_click_event_task[10a31a31-6fd5-49d0-8ed3-87cb3955f5c7] succeeded in 0.01455270000587916s: {'status': 'recorded', 'click_event_id': 'click_req_b9d433fbb3344a828685b624ad8df5e8', 'link_id': 1134, 'id': 3271}
+[2026-11-23 00:03:27,739: INFO/MainProcess] Task app.worker.record_click_event_task[6e5678e8-4fef-4eff-b516-ed4b2da69c7b] received
+[2026-11-23 00:03:27,750: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_b9d433fbb3344a828685b624ad8df5e8
+[2026-11-23 00:03:27,751: INFO/MainProcess] Task app.worker.record_click_event_task[6e5678e8-4fef-4eff-b516-ed4b2da69c7b] succeeded in 0.011815500001830515s: {'status': 'deduplicated', 'click_event_id': 'click_req_b9d433fbb3344a828685b624ad8df5e8'}
+[2026-11-23 00:03:27,762: INFO/MainProcess] Task app.worker.record_click_event_task[8730ae1c-ef8e-437f-bccd-33ee030fffad] received
+[2026-11-23 00:03:27,777: INFO/MainProcess] Task app.worker.record_click_event_task[8730ae1c-ef8e-437f-bccd-33ee030fffad] succeeded in 0.01418530000228202s: {'status': 'recorded', 'click_event_id': 'click_req_5ae326ddb5cd40d6bf713a3fb7643b34', 'link_id': 1134, 'id': 3273}
+[2026-11-23 00:03:27,788: INFO/MainProcess] Task app.worker.record_click_event_task[5f097ab2-8cb6-40e4-8639-737f081713b7] received
+[2026-11-23 00:03:27,799: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_5ae326ddb5cd40d6bf713a3fb7643b34
+[2026-11-23 00:03:27,800: INFO/MainProcess] Task app.worker.record_click_event_task[5f097ab2-8cb6-40e4-8639-737f081713b7] succeeded in 0.011518200000864454s: {'status': 'deduplicated', 'click_event_id': 'click_req_5ae326ddb5cd40d6bf713a3fb7643b34'}
+[2026-11-23 00:03:27,810: INFO/MainProcess] Task app.worker.record_click_event_task[e543ab95-059f-47d8-82ab-f573384ca4a6] received
+[2026-11-23 00:03:27,824: INFO/MainProcess] Task app.worker.record_click_event_task[e543ab95-059f-47d8-82ab-f573384ca4a6] succeeded in 0.01344729999982519s: {'status': 'recorded', 'click_event_id': 'click_req_4f8a4478825b40fabc22f9291301c3ff', 'link_id': 1134, 'id': 3275}
+[2026-11-23 00:03:27,836: INFO/MainProcess] Task app.worker.record_click_event_task[a723a07b-27f6-4a8c-a3d5-0c14a2147332] received
+[2026-11-23 00:03:27,848: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_4f8a4478825b40fabc22f9291301c3ff
+[2026-11-23 00:03:27,849: INFO/MainProcess] Task app.worker.record_click_event_task[a723a07b-27f6-4a8c-a3d5-0c14a2147332] succeeded in 0.01236619999690447s: {'status': 'deduplicated', 'click_event_id': 'click_req_4f8a4478825b40fabc22f9291301c3ff'}
+[2026-11-23 00:03:27,860: INFO/MainProcess] Task app.worker.record_click_event_task[f8199ca1-3e26-4a85-a380-e0f70de3a262] received
+[2026-11-23 00:03:27,875: INFO/MainProcess] Task app.worker.record_click_event_task[f8199ca1-3e26-4a85-a380-e0f70de3a262] succeeded in 0.013667300001543481s: {'status': 'recorded', 'click_event_id': 'click_req_729657437b754f8db6a00abcdb8973a1', 'link_id': 1134, 'id': 3277}
+[2026-11-23 00:03:27,886: INFO/MainProcess] Task app.worker.record_click_event_task[94b01a60-9ff7-4896-b11a-c4931d8b9fbb] received
+[2026-11-23 00:03:27,898: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_729657437b754f8db6a00abcdb8973a1
+[2026-11-23 00:03:27,898: INFO/MainProcess] Task app.worker.record_click_event_task[94b01a60-9ff7-4896-b11a-c4931d8b9fbb] succeeded in 0.011795600003097206s: {'status': 'deduplicated', 'click_event_id': 'click_req_729657437b754f8db6a00abcdb8973a1'}
+[2026-11-23 00:03:27,908: INFO/MainProcess] Task app.worker.record_click_event_task[0074b1a2-e5ef-400f-874f-ce4935ccdb16] received
+[2026-11-23 00:03:27,923: INFO/MainProcess] Task app.worker.record_click_event_task[0074b1a2-e5ef-400f-874f-ce4935ccdb16] succeeded in 0.014041000002180226s: {'status': 'recorded', 'click_event_id': 'click_req_b284e88fbac240b0947c494d167892f2', 'link_id': 1134, 'id': 3279}
+[2026-11-23 00:03:27,935: INFO/MainProcess] Task app.worker.record_click_event_task[5f65ff90-0361-40a8-b25b-b18ab4fb13d6] received
+[2026-11-23 00:03:27,948: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_b284e88fbac240b0947c494d167892f2
+[2026-11-23 00:03:27,949: INFO/MainProcess] Task app.worker.record_click_event_task[5f65ff90-0361-40a8-b25b-b18ab4fb13d6] succeeded in 0.012529499996162485s: {'status': 'deduplicated', 'click_event_id': 'click_req_b284e88fbac240b0947c494d167892f2'}
+[2026-11-23 00:03:27,960: INFO/MainProcess] Task app.worker.record_click_event_task[630e00d8-6a34-48a7-bcc1-d1e50a878351] received
+[2026-11-23 00:03:27,974: INFO/MainProcess] Task app.worker.record_click_event_task[630e00d8-6a34-48a7-bcc1-d1e50a878351] succeeded in 0.014034799998626113s: {'status': 'recorded', 'click_event_id': 'click_req_03f3ea94141b4b2981332ffdf637339d', 'link_id': 1134, 'id': 3281}
+[2026-11-23 00:03:27,986: INFO/MainProcess] Task app.worker.record_click_event_task[9ddf17c6-e3e3-41bd-946c-f112843ecec0] received
+[2026-11-23 00:03:28,000: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_03f3ea94141b4b2981332ffdf637339d
+[2026-11-23 00:03:28,000: INFO/MainProcess] Task app.worker.record_click_event_task[9ddf17c6-e3e3-41bd-946c-f112843ecec0] succeeded in 0.013327000000572298s: {'status': 'deduplicated', 'click_event_id': 'click_req_03f3ea94141b4b2981332ffdf637339d'}
+[2026-11-23 00:03:28,012: INFO/MainProcess] Task app.worker.record_click_event_task[66766d9a-25c5-44e8-a86e-8936c61200f0] received
+[2026-11-23 00:03:28,029: INFO/MainProcess] Task app.worker.record_click_event_task[66766d9a-25c5-44e8-a86e-8936c61200f0] succeeded in 0.01614510000217706s: {'status': 'recorded', 'click_event_id': 'click_req_3dc3216c70f74281b343e284fc5c809c', 'link_id': 1134, 'id': 3283}
+[2026-11-23 00:03:28,040: INFO/MainProcess] Task app.worker.record_click_event_task[437cec23-a425-46b4-a6f9-ecb3ba3bb69c] received
+[2026-11-23 00:03:28,053: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_3dc3216c70f74281b343e284fc5c809c
+[2026-11-23 00:03:28,053: INFO/MainProcess] Task app.worker.record_click_event_task[437cec23-a425-46b4-a6f9-ecb3ba3bb69c] succeeded in 0.012436500001058448s: {'status': 'deduplicated', 'click_event_id': 'click_req_3dc3216c70f74281b343e284fc5c809c'}
+[2026-11-23 00:03:28,065: INFO/MainProcess] Task app.worker.record_click_event_task[bd7c0e0b-c698-4303-b56c-77dd1d1f609c] received
+[2026-11-23 00:03:28,082: INFO/MainProcess] Task app.worker.record_click_event_task[bd7c0e0b-c698-4303-b56c-77dd1d1f609c] succeeded in 0.016424599998572376s: {'status': 'recorded', 'click_event_id': 'click_req_396b5f8fa107481189e434a29cbc2c1d', 'link_id': 1134, 'id': 3285}
+[2026-11-23 00:03:28,092: INFO/MainProcess] Task app.worker.record_click_event_task[5e9488b7-4f9b-4733-9a49-14aa3ccbedba] received
+[2026-11-23 00:03:28,105: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_396b5f8fa107481189e434a29cbc2c1d
+[2026-11-23 00:03:28,105: INFO/MainProcess] Task app.worker.record_click_event_task[5e9488b7-4f9b-4733-9a49-14aa3ccbedba] succeeded in 0.011893100003362633s: {'status': 'deduplicated', 'click_event_id': 'click_req_396b5f8fa107481189e434a29cbc2c1d'}
+[2026-11-23 00:03:28,118: INFO/MainProcess] Task app.worker.record_click_event_task[e23769b4-e782-45e4-a542-2d6d1ce53936] received
+[2026-11-23 00:03:28,134: INFO/MainProcess] Task app.worker.record_click_event_task[e23769b4-e782-45e4-a542-2d6d1ce53936] succeeded in 0.015511499994318001s: {'status': 'recorded', 'click_event_id': 'click_req_0e093686b77f4f19841309dab21a43e0', 'link_id': 1134, 'id': 3287}
+[2026-11-23 00:03:28,145: INFO/MainProcess] Task app.worker.record_click_event_task[ff352105-09ca-4ef4-8338-c5a624f3fab5] received
+[2026-11-23 00:03:28,157: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_0e093686b77f4f19841309dab21a43e0
+[2026-11-23 00:03:28,157: INFO/MainProcess] Task app.worker.record_click_event_task[ff352105-09ca-4ef4-8338-c5a624f3fab5] succeeded in 0.011323500002617948s: {'status': 'deduplicated', 'click_event_id': 'click_req_0e093686b77f4f19841309dab21a43e0'}
+[2026-11-23 00:03:28,169: INFO/MainProcess] Task app.worker.record_click_event_task[e0558887-825d-4688-94aa-a1a44dd901c9] received
+[2026-11-23 00:03:28,184: INFO/MainProcess] Task app.worker.record_click_event_task[e0558887-825d-4688-94aa-a1a44dd901c9] succeeded in 0.014408900002308656s: {'status': 'recorded', 'click_event_id': 'click_req_6f9127354e13480684484dcc638fbabe', 'link_id': 1134, 'id': 3289}
+[2026-11-23 00:03:28,196: INFO/MainProcess] Task app.worker.record_click_event_task[7e7ecfdb-d62f-4ebc-9004-c288d8190aeb] received
+[2026-11-23 00:03:28,208: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_6f9127354e13480684484dcc638fbabe
+[2026-11-23 00:03:28,209: INFO/MainProcess] Task app.worker.record_click_event_task[7e7ecfdb-d62f-4ebc-9004-c288d8190aeb] succeeded in 0.01256670000293525s: {'status': 'deduplicated', 'click_event_id': 'click_req_6f9127354e13480684484dcc638fbabe'}
+[2026-11-23 00:03:28,221: INFO/MainProcess] Task app.worker.record_click_event_task[9fc1ef5e-fc78-4c9c-a7e4-0ce2ed3e6717] received
+[2026-11-23 00:03:28,238: INFO/MainProcess] Task app.worker.record_click_event_task[9fc1ef5e-fc78-4c9c-a7e4-0ce2ed3e6717] succeeded in 0.016553599998587742s: {'status': 'recorded', 'click_event_id': 'click_req_adbaa92e35154ac7b1967ddd09c2836e', 'link_id': 1134, 'id': 3291}
+[2026-11-23 00:03:28,250: INFO/MainProcess] Task app.worker.record_click_event_task[28b89c72-d7e8-4406-ac75-dc2fcbe69f94] received
+[2026-11-23 00:03:28,264: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_adbaa92e35154ac7b1967ddd09c2836e
+[2026-11-23 00:03:28,265: INFO/MainProcess] Task app.worker.record_click_event_task[28b89c72-d7e8-4406-ac75-dc2fcbe69f94] succeeded in 0.01370110000425484s: {'status': 'deduplicated', 'click_event_id': 'click_req_adbaa92e35154ac7b1967ddd09c2836e'}
+[2026-11-23 00:03:28,278: INFO/MainProcess] Task app.worker.record_click_event_task[e3fd7ee1-dddc-418a-89a3-d56e8692abb6] received
+[2026-11-23 00:03:28,297: INFO/MainProcess] Task app.worker.record_click_event_task[e3fd7ee1-dddc-418a-89a3-d56e8692abb6] succeeded in 0.018500000005587935s: {'status': 'recorded', 'click_event_id': 'click_req_6ccc2b5e80514240af2dbc9ff2f52a1c', 'link_id': 1134, 'id': 3293}
+[2026-11-23 00:03:28,310: INFO/MainProcess] Task app.worker.record_click_event_task[ca468e79-f174-447e-8d69-5ed01ad55089] received
+[2026-11-23 00:03:28,323: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_6ccc2b5e80514240af2dbc9ff2f52a1c
+[2026-11-23 00:03:28,324: INFO/MainProcess] Task app.worker.record_click_event_task[ca468e79-f174-447e-8d69-5ed01ad55089] succeeded in 0.013069200002064463s: {'status': 'deduplicated', 'click_event_id': 'click_req_6ccc2b5e80514240af2dbc9ff2f52a1c'}
+[2026-11-23 00:03:28,337: INFO/MainProcess] Task app.worker.record_click_event_task[3bf5f589-785e-4c93-acc0-9c46f1beeded] received
+[2026-11-23 00:03:28,356: INFO/MainProcess] Task app.worker.record_click_event_task[3bf5f589-785e-4c93-acc0-9c46f1beeded] succeeded in 0.018909700003860053s: {'status': 'recorded', 'click_event_id': 'click_req_0b2b4ead63b74dc0b2aad7ba4f0741d3', 'link_id': 1134, 'id': 3295}
+[2026-11-23 00:03:28,373: INFO/MainProcess] Task app.worker.record_click_event_task[fe83b0c6-a5da-4332-8e81-4e9d0287da7a] received
+[2026-11-23 00:03:28,390: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_0b2b4ead63b74dc0b2aad7ba4f0741d3
+[2026-11-23 00:03:28,390: INFO/MainProcess] Task app.worker.record_click_event_task[fe83b0c6-a5da-4332-8e81-4e9d0287da7a] succeeded in 0.016519400000106543s: {'status': 'deduplicated', 'click_event_id': 'click_req_0b2b4ead63b74dc0b2aad7ba4f0741d3'}
+[2026-11-23 00:03:28,405: INFO/MainProcess] Task app.worker.record_click_event_task[44fe194c-3122-46d6-a276-d2ecdc783edd] received
+[2026-11-23 00:03:28,425: INFO/MainProcess] Task app.worker.record_click_event_task[44fe194c-3122-46d6-a276-d2ecdc783edd] succeeded in 0.019240900001022965s: {'status': 'recorded', 'click_event_id': 'click_req_95c5de15b22e4638a28f2e241d90a73b', 'link_id': 1134, 'id': 3297}
+[2026-11-23 00:03:28,438: INFO/MainProcess] Task app.worker.record_click_event_task[93a397eb-4f7d-44ec-98bb-9df86de7ed64] received
+[2026-11-23 00:03:28,453: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_95c5de15b22e4638a28f2e241d90a73b
+[2026-11-23 00:03:28,454: INFO/MainProcess] Task app.worker.record_click_event_task[93a397eb-4f7d-44ec-98bb-9df86de7ed64] succeeded in 0.015226400006213225s: {'status': 'deduplicated', 'click_event_id': 'click_req_95c5de15b22e4638a28f2e241d90a73b'}
+[2026-11-23 00:03:28,468: INFO/MainProcess] Task app.worker.record_click_event_task[281c48df-4820-4073-8a16-86a7b6b3a508] received
+[2026-11-23 00:03:28,488: INFO/MainProcess] Task app.worker.record_click_event_task[281c48df-4820-4073-8a16-86a7b6b3a508] succeeded in 0.01916479999636067s: {'status': 'recorded', 'click_event_id': 'click_req_73910ae4f72c4146abdc0f900b3121e4', 'link_id': 1134, 'id': 3299}
+[2026-11-23 00:03:28,503: INFO/MainProcess] Task app.worker.record_click_event_task[8b7d3d6b-59ea-42d0-9cc5-0b94d64d78a3] received
+[2026-11-23 00:03:28,519: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_73910ae4f72c4146abdc0f900b3121e4
+[2026-11-23 00:03:28,520: INFO/MainProcess] Task app.worker.record_click_event_task[8b7d3d6b-59ea-42d0-9cc5-0b94d64d78a3] succeeded in 0.015880899998592213s: {'status': 'deduplicated', 'click_event_id': 'click_req_73910ae4f72c4146abdc0f900b3121e4'}
+[2026-11-23 00:03:28,533: INFO/MainProcess] Task app.worker.record_click_event_task[c2c13cd7-3530-461f-b0cd-c447f80672ec] received
+[2026-11-23 00:03:28,551: INFO/MainProcess] Task app.worker.record_click_event_task[c2c13cd7-3530-461f-b0cd-c447f80672ec] succeeded in 0.017191600003570784s: {'status': 'recorded', 'click_event_id': 'click_req_f8269b7f3075443eb4df813b20e0d9a6', 'link_id': 1134, 'id': 3301}
+[2026-11-23 00:03:28,566: INFO/MainProcess] Task app.worker.record_click_event_task[d83d369c-be63-49f8-8ab0-e14d4fea6c6d] received
+[2026-11-23 00:03:28,583: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_f8269b7f3075443eb4df813b20e0d9a6
+[2026-11-23 00:03:28,584: INFO/MainProcess] Task app.worker.record_click_event_task[d83d369c-be63-49f8-8ab0-e14d4fea6c6d] succeeded in 0.017704999998386484s: {'status': 'deduplicated', 'click_event_id': 'click_req_f8269b7f3075443eb4df813b20e0d9a6'}
+[2026-11-23 00:03:28,602: INFO/MainProcess] Task app.worker.record_click_event_task[a78efa14-52df-4933-a548-51263ce460e4] received
+[2026-11-23 00:03:28,620: INFO/MainProcess] Task app.worker.record_click_event_task[a78efa14-52df-4933-a548-51263ce460e4] succeeded in 0.017808199998398777s: {'status': 'recorded', 'click_event_id': 'click_req_73aa54d97fc540e5b036753141107d7d', 'link_id': 1134, 'id': 3303}
+[2026-11-23 00:03:28,633: INFO/MainProcess] Task app.worker.record_click_event_task[60b3031f-a744-4e87-bf48-a71bc78b9502] received
+[2026-11-23 00:03:28,648: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_73aa54d97fc540e5b036753141107d7d
+[2026-11-23 00:03:28,649: INFO/MainProcess] Task app.worker.record_click_event_task[60b3031f-a744-4e87-bf48-a71bc78b9502] succeeded in 0.014815000002272427s: {'status': 'deduplicated', 'click_event_id': 'click_req_73aa54d97fc540e5b036753141107d7d'}
+[2026-11-23 00:03:28,663: INFO/MainProcess] Task app.worker.record_click_event_task[3a36f169-5fc7-4bcb-aae2-9ce8e2fe63ae] received
+[2026-11-23 00:03:28,683: INFO/MainProcess] Task app.worker.record_click_event_task[3a36f169-5fc7-4bcb-aae2-9ce8e2fe63ae] succeeded in 0.01979869999922812s: {'status': 'recorded', 'click_event_id': 'click_req_ad31a6dd58164a8687a583f1493aa114', 'link_id': 1134, 'id': 3305}
+[2026-11-23 00:03:28,698: INFO/MainProcess] Task app.worker.record_click_event_task[f64cadf3-4b8f-49b4-ac43-b1b3b9bf3aa5] received
+[2026-11-23 00:03:28,713: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_ad31a6dd58164a8687a583f1493aa114
+[2026-11-23 00:03:28,714: INFO/MainProcess] Task app.worker.record_click_event_task[f64cadf3-4b8f-49b4-ac43-b1b3b9bf3aa5] succeeded in 0.015783200004079845s: {'status': 'deduplicated', 'click_event_id': 'click_req_ad31a6dd58164a8687a583f1493aa114'}
+[2026-11-23 00:03:28,729: INFO/MainProcess] Task app.worker.record_click_event_task[e4f7cb2a-451c-446d-8c33-929d54c26f46] received
+[2026-11-23 00:03:28,749: INFO/MainProcess] Task app.worker.record_click_event_task[e4f7cb2a-451c-446d-8c33-929d54c26f46] succeeded in 0.019009000003279652s: {'status': 'recorded', 'click_event_id': 'click_req_e7024ddc7044440b8d16e139103f77ac', 'link_id': 1134, 'id': 3307}
+[2026-11-23 00:03:28,763: INFO/MainProcess] Task app.worker.record_click_event_task[c274d56f-b397-46d7-9c19-2e091d5a33c6] received
+[2026-11-23 00:03:28,778: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_e7024ddc7044440b8d16e139103f77ac
+[2026-11-23 00:03:28,779: INFO/MainProcess] Task app.worker.record_click_event_task[c274d56f-b397-46d7-9c19-2e091d5a33c6] succeeded in 0.015641300000424962s: {'status': 'deduplicated', 'click_event_id': 'click_req_e7024ddc7044440b8d16e139103f77ac'}
+[2026-11-23 00:03:28,794: INFO/MainProcess] Task app.worker.record_click_event_task[496a2d4c-f260-48c2-a40c-6af67dff56df] received
+[2026-11-23 00:03:28,816: INFO/MainProcess] Task app.worker.record_click_event_task[496a2d4c-f260-48c2-a40c-6af67dff56df] succeeded in 0.021222399998805486s: {'status': 'recorded', 'click_event_id': 'click_req_2d0a243eba3847a4b60ea2a5536ce3dc', 'link_id': 1134, 'id': 3309}
+[2026-11-23 00:03:28,830: INFO/MainProcess] Task app.worker.record_click_event_task[e99a8bb2-2001-4645-b249-ddf219d244d0] received
+[2026-11-23 00:03:28,843: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_2d0a243eba3847a4b60ea2a5536ce3dc
+[2026-11-23 00:03:28,845: INFO/MainProcess] Task app.worker.record_click_event_task[e99a8bb2-2001-4645-b249-ddf219d244d0] succeeded in 0.014288600003055762s: {'status': 'deduplicated', 'click_event_id': 'click_req_2d0a243eba3847a4b60ea2a5536ce3dc'}
+[2026-11-23 00:03:28,857: INFO/MainProcess] Task app.worker.record_click_event_task[e5368800-984b-40d4-83e1-0e848389029f] received
+[2026-11-23 00:03:28,876: INFO/MainProcess] Task app.worker.record_click_event_task[e5368800-984b-40d4-83e1-0e848389029f] succeeded in 0.018045300006633624s: {'status': 'recorded', 'click_event_id': 'click_req_acf073fe655b4e90baec4926cf72b04d', 'link_id': 1134, 'id': 3311}
+[2026-11-23 00:03:28,889: INFO/MainProcess] Task app.worker.record_click_event_task[b77521d9-40d0-419d-8dd8-17a7b5ac67a9] received
+[2026-11-23 00:03:28,902: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_acf073fe655b4e90baec4926cf72b04d
+[2026-11-23 00:03:28,903: INFO/MainProcess] Task app.worker.record_click_event_task[b77521d9-40d0-419d-8dd8-17a7b5ac67a9] succeeded in 0.013595500000519678s: {'status': 'deduplicated', 'click_event_id': 'click_req_acf073fe655b4e90baec4926cf72b04d'}
+[2026-11-23 00:03:28,917: INFO/MainProcess] Task app.worker.record_click_event_task[a7b7db35-a674-4b10-b9cb-667314c6b8bf] received
+[2026-11-23 00:03:28,933: INFO/MainProcess] Task app.worker.record_click_event_task[a7b7db35-a674-4b10-b9cb-667314c6b8bf] succeeded in 0.015587500005494803s: {'status': 'recorded', 'click_event_id': 'click_req_c4b51ab48aab484787ad5a07bd0ce4bc', 'link_id': 1134, 'id': 3313}
+[2026-11-23 00:03:28,945: INFO/MainProcess] Task app.worker.record_click_event_task[01de79ba-4247-42d6-975e-b6493c48ebdf] received
+[2026-11-23 00:03:28,959: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_c4b51ab48aab484787ad5a07bd0ce4bc
+[2026-11-23 00:03:28,960: INFO/MainProcess] Task app.worker.record_click_event_task[01de79ba-4247-42d6-975e-b6493c48ebdf] succeeded in 0.013785000002826564s: {'status': 'deduplicated', 'click_event_id': 'click_req_c4b51ab48aab484787ad5a07bd0ce4bc'}
+[2026-11-23 00:03:28,972: INFO/MainProcess] Task app.worker.record_click_event_task[670b2e17-82f9-4270-9f8e-c9adf479ab92] received
+[2026-11-23 00:03:28,991: INFO/MainProcess] Task app.worker.record_click_event_task[670b2e17-82f9-4270-9f8e-c9adf479ab92] succeeded in 0.017710399995849002s: {'status': 'recorded', 'click_event_id': 'click_req_4123983acbf745e295f9e5b07370d86f', 'link_id': 1134, 'id': 3315}
+[2026-11-23 00:03:29,003: INFO/MainProcess] Task app.worker.record_click_event_task[c4268610-0127-45de-84dc-bf9a10158ab3] received
+[2026-11-23 00:03:29,017: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_4123983acbf745e295f9e5b07370d86f
+[2026-11-23 00:03:29,018: INFO/MainProcess] Task app.worker.record_click_event_task[c4268610-0127-45de-84dc-bf9a10158ab3] succeeded in 0.013860499995644204s: {'status': 'deduplicated', 'click_event_id': 'click_req_4123983acbf745e295f9e5b07370d86f'}
+[2026-11-23 00:03:29,030: INFO/MainProcess] Task app.worker.record_click_event_task[9fa1e8e0-9638-409b-b2b6-cf87df92dec6] received
+[2026-11-23 00:03:29,049: INFO/MainProcess] Task app.worker.record_click_event_task[9fa1e8e0-9638-409b-b2b6-cf87df92dec6] succeeded in 0.018623500000103377s: {'status': 'recorded', 'click_event_id': 'click_req_9853d26d206b41a8a3cce0ebcd8a0b03', 'link_id': 1134, 'id': 3317}
+[2026-11-23 00:03:29,060: INFO/MainProcess] Task app.worker.record_click_event_task[c3e65845-cde0-440f-b1fc-a63aebd1191e] received
+[2026-11-23 00:03:29,073: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_9853d26d206b41a8a3cce0ebcd8a0b03
+[2026-11-23 00:03:29,074: INFO/MainProcess] Task app.worker.record_click_event_task[c3e65845-cde0-440f-b1fc-a63aebd1191e] succeeded in 0.012690800002019387s: {'status': 'deduplicated', 'click_event_id': 'click_req_9853d26d206b41a8a3cce0ebcd8a0b03'}
+[2026-11-23 00:03:29,087: INFO/MainProcess] Task app.worker.record_click_event_task[3ab3b4db-6473-4e5b-bf5f-e82e5bbd8fea] received
+[2026-11-23 00:03:29,103: INFO/MainProcess] Task app.worker.record_click_event_task[3ab3b4db-6473-4e5b-bf5f-e82e5bbd8fea] succeeded in 0.01527170000190381s: {'status': 'recorded', 'click_event_id': 'click_req_fb7d345e6408401ca53e1fca771d1c5d', 'link_id': 1134, 'id': 3319}
+[2026-11-23 00:03:29,115: INFO/MainProcess] Task app.worker.record_click_event_task[8fa580e1-353d-4120-bc73-af8a02571505] received
+[2026-11-23 00:03:29,129: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_fb7d345e6408401ca53e1fca771d1c5d
+[2026-11-23 00:03:29,130: INFO/MainProcess] Task app.worker.record_click_event_task[8fa580e1-353d-4120-bc73-af8a02571505] succeeded in 0.014770599998882972s: {'status': 'deduplicated', 'click_event_id': 'click_req_fb7d345e6408401ca53e1fca771d1c5d'}
+[2026-11-23 00:03:29,142: INFO/MainProcess] Task app.worker.record_click_event_task[7d4788fb-76c8-4595-8523-c66a3c30d00a] received
+[2026-11-23 00:03:29,161: INFO/MainProcess] Task app.worker.record_click_event_task[7d4788fb-76c8-4595-8523-c66a3c30d00a] succeeded in 0.0176766000004136s: {'status': 'recorded', 'click_event_id': 'click_req_9dfeb3393cdc4f05a6bd346b4e936a76', 'link_id': 1134, 'id': 3321}
+[2026-11-23 00:03:29,173: INFO/MainProcess] Task app.worker.record_click_event_task[df10480a-8bfb-4b0a-9e21-7ed21e1801df] received
+[2026-11-23 00:03:29,188: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_9dfeb3393cdc4f05a6bd346b4e936a76
+[2026-11-23 00:03:29,189: INFO/MainProcess] Task app.worker.record_click_event_task[df10480a-8bfb-4b0a-9e21-7ed21e1801df] succeeded in 0.01484599999821512s: {'status': 'deduplicated', 'click_event_id': 'click_req_9dfeb3393cdc4f05a6bd346b4e936a76'}
+[2026-11-23 00:03:29,202: INFO/MainProcess] Task app.worker.record_click_event_task[9f33eda9-184f-49b4-bcaf-4c1dd8d2106d] received
+[2026-11-23 00:03:29,221: INFO/MainProcess] Task app.worker.record_click_event_task[9f33eda9-184f-49b4-bcaf-4c1dd8d2106d] succeeded in 0.017837400002463255s: {'status': 'recorded', 'click_event_id': 'click_req_0e5e4367950b4f58a320a0c1d33c1e0a', 'link_id': 1134, 'id': 3323}
+[2026-11-23 00:03:29,235: INFO/MainProcess] Task app.worker.record_click_event_task[1672f997-6d08-4bde-af88-387b0252f3c0] received
+[2026-11-23 00:03:29,248: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_0e5e4367950b4f58a320a0c1d33c1e0a
+[2026-11-23 00:03:29,249: INFO/MainProcess] Task app.worker.record_click_event_task[1672f997-6d08-4bde-af88-387b0252f3c0] succeeded in 0.01298520000273129s: {'status': 'deduplicated', 'click_event_id': 'click_req_0e5e4367950b4f58a320a0c1d33c1e0a'}
+[2026-11-23 00:03:29,261: INFO/MainProcess] Task app.worker.record_click_event_task[eca36ffd-7d79-4941-9079-b2df3481cf72] received
+[2026-11-23 00:03:29,280: INFO/MainProcess] Task app.worker.record_click_event_task[eca36ffd-7d79-4941-9079-b2df3481cf72] succeeded in 0.01743640000495361s: {'status': 'recorded', 'click_event_id': 'click_req_5f9a01077ffd4b289c12243a72226230', 'link_id': 1134, 'id': 3325}
+[2026-11-23 00:03:29,293: INFO/MainProcess] Task app.worker.record_click_event_task[030cefac-e180-43da-a408-a0f51535d09f] received
+[2026-11-23 00:03:29,307: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_5f9a01077ffd4b289c12243a72226230
+[2026-11-23 00:03:29,307: INFO/MainProcess] Task app.worker.record_click_event_task[030cefac-e180-43da-a408-a0f51535d09f] succeeded in 0.013719199996558018s: {'status': 'deduplicated', 'click_event_id': 'click_req_5f9a01077ffd4b289c12243a72226230'}
+[2026-11-23 00:03:29,320: INFO/MainProcess] Task app.worker.record_click_event_task[54ad4d36-74ea-4f79-94e9-549f2938b87a] received
+[2026-11-23 00:03:29,337: INFO/MainProcess] Task app.worker.record_click_event_task[54ad4d36-74ea-4f79-94e9-549f2938b87a] succeeded in 0.016535900002054404s: {'status': 'recorded', 'click_event_id': 'click_req_64a399889a664d7ca8a34d35dd8a202c', 'link_id': 1134, 'id': 3327}
+[2026-11-23 00:03:29,350: INFO/MainProcess] Task app.worker.record_click_event_task[d4732cba-0e8e-4263-8fa5-dbcd0dde20d4] received
+[2026-11-23 00:03:29,365: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_64a399889a664d7ca8a34d35dd8a202c
+[2026-11-23 00:03:29,366: INFO/MainProcess] Task app.worker.record_click_event_task[d4732cba-0e8e-4263-8fa5-dbcd0dde20d4] succeeded in 0.015089400003489573s: {'status': 'deduplicated', 'click_event_id': 'click_req_64a399889a664d7ca8a34d35dd8a202c'}
+[2026-11-23 00:03:29,377: INFO/MainProcess] Task app.worker.record_click_event_task[f885f8d9-51d4-40a2-aa93-1ea0a43683b4] received
+[2026-11-23 00:03:29,394: INFO/MainProcess] Task app.worker.record_click_event_task[f885f8d9-51d4-40a2-aa93-1ea0a43683b4] succeeded in 0.016326099997968413s: {'status': 'recorded', 'click_event_id': 'click_req_cb05add729fb487aa2b9564922d331a6', 'link_id': 1134, 'id': 3329}
+[2026-11-23 00:03:29,409: INFO/MainProcess] Task app.worker.record_click_event_task[78e16e5d-c3c4-464d-9bbd-29de38141bcf] received
+[2026-11-23 00:03:29,423: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_cb05add729fb487aa2b9564922d331a6
+[2026-11-23 00:03:29,424: INFO/MainProcess] Task app.worker.record_click_event_task[78e16e5d-c3c4-464d-9bbd-29de38141bcf] succeeded in 0.014242400000512134s: {'status': 'deduplicated', 'click_event_id': 'click_req_cb05add729fb487aa2b9564922d331a6'}
+[2026-11-23 00:03:29,436: INFO/MainProcess] Task app.worker.record_click_event_task[e6e41fa2-95cd-4873-b7c9-dd937f09eedc] received
+[2026-11-23 00:03:29,455: INFO/MainProcess] Task app.worker.record_click_event_task[e6e41fa2-95cd-4873-b7c9-dd937f09eedc] succeeded in 0.018485499997041188s: {'status': 'recorded', 'click_event_id': 'click_req_262aef60fe784c0782c2feb264192927', 'link_id': 1134, 'id': 3331}
+[2026-11-23 00:03:29,468: INFO/MainProcess] Task app.worker.record_click_event_task[13bd3249-2a91-437b-9ebb-d4e0357a81f5] received
+[2026-11-23 00:03:29,482: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_262aef60fe784c0782c2feb264192927
+[2026-11-23 00:03:29,483: INFO/MainProcess] Task app.worker.record_click_event_task[13bd3249-2a91-437b-9ebb-d4e0357a81f5] succeeded in 0.014333000006445218s: {'status': 'deduplicated', 'click_event_id': 'click_req_262aef60fe784c0782c2feb264192927'}
+[2026-11-23 00:03:29,498: INFO/MainProcess] Task app.worker.record_click_event_task[bf94b76f-db8b-4775-9059-07979cb4795d] received
+[2026-11-23 00:03:29,516: INFO/MainProcess] Task app.worker.record_click_event_task[bf94b76f-db8b-4775-9059-07979cb4795d] succeeded in 0.016878099995665252s: {'status': 'recorded', 'click_event_id': 'click_req_6a26b8cff5004794968887db58a44781', 'link_id': 1134, 'id': 3333}
+[2026-11-23 00:03:29,529: INFO/MainProcess] Task app.worker.record_click_event_task[b52a9fd7-da2a-4399-8125-586e7d801f58] received
+[2026-11-23 00:03:29,545: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_6a26b8cff5004794968887db58a44781
+[2026-11-23 00:03:29,548: INFO/MainProcess] Task app.worker.record_click_event_task[b52a9fd7-da2a-4399-8125-586e7d801f58] succeeded in 0.01722239999799058s: {'status': 'deduplicated', 'click_event_id': 'click_req_6a26b8cff5004794968887db58a44781'}
+[2026-11-23 00:03:29,571: INFO/MainProcess] Task app.worker.record_click_event_task[b5584add-6018-44b8-bc3b-b2bdaaefe6fd] received
+[2026-11-23 00:03:29,590: INFO/MainProcess] Task app.worker.record_click_event_task[b5584add-6018-44b8-bc3b-b2bdaaefe6fd] succeeded in 0.018394499995338265s: {'status': 'recorded', 'click_event_id': 'click_req_934e91cd86494ce08c34e2486a4993d5', 'link_id': 1134, 'id': 3335}
+[2026-11-23 00:03:29,604: INFO/MainProcess] Task app.worker.record_click_event_task[c9ded39f-99dc-4986-a2f4-24240ea6b314] received
+[2026-11-23 00:03:29,620: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_934e91cd86494ce08c34e2486a4993d5
+[2026-11-23 00:03:29,621: INFO/MainProcess] Task app.worker.record_click_event_task[c9ded39f-99dc-4986-a2f4-24240ea6b314] succeeded in 0.016566899997997098s: {'status': 'deduplicated', 'click_event_id': 'click_req_934e91cd86494ce08c34e2486a4993d5'}
+[2026-11-23 00:03:29,636: INFO/MainProcess] Task app.worker.record_click_event_task[cfd8b055-0b9e-4ce3-86e3-248a4e97d2c3] received
+[2026-11-23 00:03:29,656: INFO/MainProcess] Task app.worker.record_click_event_task[cfd8b055-0b9e-4ce3-86e3-248a4e97d2c3] succeeded in 0.019171599997207522s: {'status': 'recorded', 'click_event_id': 'click_req_f468be01d66d45d5b3fa5c34d06255e9', 'link_id': 1134, 'id': 3337}
+[2026-11-23 00:03:29,671: INFO/MainProcess] Task app.worker.record_click_event_task[76890775-347b-430a-a005-891ea4188bbc] received
+[2026-11-23 00:03:29,688: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_f468be01d66d45d5b3fa5c34d06255e9
+[2026-11-23 00:03:29,689: INFO/MainProcess] Task app.worker.record_click_event_task[76890775-347b-430a-a005-891ea4188bbc] succeeded in 0.01720789999671979s: {'status': 'deduplicated', 'click_event_id': 'click_req_f468be01d66d45d5b3fa5c34d06255e9'}
+[2026-11-23 00:03:29,703: INFO/MainProcess] Task app.worker.record_click_event_task[a2e3744e-eebf-4b76-9e5b-d6b691d2f00d] received
+[2026-11-23 00:03:29,722: INFO/MainProcess] Task app.worker.record_click_event_task[a2e3744e-eebf-4b76-9e5b-d6b691d2f00d] succeeded in 0.01786580000043614s: {'status': 'recorded', 'click_event_id': 'click_req_cdf0f6eed1444f4caf676e2f456ff279', 'link_id': 1134, 'id': 3339}
+[2026-11-23 00:03:29,735: INFO/MainProcess] Task app.worker.record_click_event_task[35078904-52cc-44c9-b955-a5c17a093486] received
+[2026-11-23 00:03:29,752: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_cdf0f6eed1444f4caf676e2f456ff279
+[2026-11-23 00:03:29,753: INFO/MainProcess] Task app.worker.record_click_event_task[35078904-52cc-44c9-b955-a5c17a093486] succeeded in 0.016766200002166443s: {'status': 'deduplicated', 'click_event_id': 'click_req_cdf0f6eed1444f4caf676e2f456ff279'}
+[2026-11-23 00:03:29,768: INFO/MainProcess] Task app.worker.record_click_event_task[f3f7ed34-6949-478b-8fca-e67f53703352] received
+[2026-11-23 00:03:29,789: INFO/MainProcess] Task app.worker.record_click_event_task[f3f7ed34-6949-478b-8fca-e67f53703352] succeeded in 0.01938220000010915s: {'status': 'recorded', 'click_event_id': 'click_req_83f6dc91ec3c4770ae21514b0640e737', 'link_id': 1134, 'id': 3341}
+[2026-11-23 00:03:29,802: INFO/MainProcess] Task app.worker.record_click_event_task[610cd47d-8206-4c8c-af6c-a6fa5d4a89c8] received
+[2026-11-23 00:03:29,818: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_83f6dc91ec3c4770ae21514b0640e737
+[2026-11-23 00:03:29,819: INFO/MainProcess] Task app.worker.record_click_event_task[610cd47d-8206-4c8c-af6c-a6fa5d4a89c8] succeeded in 0.016318800000590272s: {'status': 'deduplicated', 'click_event_id': 'click_req_83f6dc91ec3c4770ae21514b0640e737'}
+[2026-11-23 00:03:29,834: INFO/MainProcess] Task app.worker.record_click_event_task[67801d16-ba4d-4ec9-9b13-51df803f32f8] received
+[2026-11-23 00:03:29,852: INFO/MainProcess] Task app.worker.record_click_event_task[67801d16-ba4d-4ec9-9b13-51df803f32f8] succeeded in 0.017808600001444574s: {'status': 'recorded', 'click_event_id': 'click_req_b325861b9ddb4e2a9df37f1b984f0525', 'link_id': 1134, 'id': 3343}
+[2026-11-23 00:03:29,867: INFO/MainProcess] Task app.worker.record_click_event_task[1a7f62fc-745e-449b-887f-6f7283e98b60] received
+[2026-11-23 00:03:29,883: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_b325861b9ddb4e2a9df37f1b984f0525
+[2026-11-23 00:03:29,884: INFO/MainProcess] Task app.worker.record_click_event_task[1a7f62fc-745e-449b-887f-6f7283e98b60] succeeded in 0.016468499998154584s: {'status': 'deduplicated', 'click_event_id': 'click_req_b325861b9ddb4e2a9df37f1b984f0525'}
+[2026-11-23 00:03:29,899: INFO/MainProcess] Task app.worker.record_click_event_task[5796ac5d-c1f7-44c2-9d7a-db7f380faeec] received
+[2026-11-23 00:03:29,920: INFO/MainProcess] Task app.worker.record_click_event_task[5796ac5d-c1f7-44c2-9d7a-db7f380faeec] succeeded in 0.020140799999353476s: {'status': 'recorded', 'click_event_id': 'click_req_1d483f6e89d045129228811011e88da0', 'link_id': 1134, 'id': 3345}
+[2026-11-23 00:03:29,935: INFO/MainProcess] Task app.worker.record_click_event_task[e13269e9-5ae0-4793-8e5d-8ad721e9e8f6] received
+[2026-11-23 00:03:29,952: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_1d483f6e89d045129228811011e88da0
+[2026-11-23 00:03:29,953: INFO/MainProcess] Task app.worker.record_click_event_task[e13269e9-5ae0-4793-8e5d-8ad721e9e8f6] succeeded in 0.016922200004046317s: {'status': 'deduplicated', 'click_event_id': 'click_req_1d483f6e89d045129228811011e88da0'}
+[2026-11-23 00:03:29,969: INFO/MainProcess] Task app.worker.record_click_event_task[29474cff-8452-45f8-b63e-789b5c119d0b] received
+[2026-11-23 00:03:29,989: INFO/MainProcess] Task app.worker.record_click_event_task[29474cff-8452-45f8-b63e-789b5c119d0b] succeeded in 0.01979649999702815s: {'status': 'recorded', 'click_event_id': 'click_req_cd3ab177c40940f5b2a8b465bcea047d', 'link_id': 1134, 'id': 3347}
+[2026-11-23 00:03:30,005: INFO/MainProcess] Task app.worker.record_click_event_task[e21fb1de-9d9f-4712-bc6b-c81c625fd21d] received
+[2026-11-23 00:03:30,019: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_cd3ab177c40940f5b2a8b465bcea047d
+[2026-11-23 00:03:30,020: INFO/MainProcess] Task app.worker.record_click_event_task[e21fb1de-9d9f-4712-bc6b-c81c625fd21d] succeeded in 0.014794200003962032s: {'status': 'deduplicated', 'click_event_id': 'click_req_cd3ab177c40940f5b2a8b465bcea047d'}
+[2026-11-23 00:03:30,033: INFO/MainProcess] Task app.worker.record_click_event_task[e44e7584-9312-4880-9e14-7ac108a2c773] received
+[2026-11-23 00:03:30,054: INFO/MainProcess] Task app.worker.record_click_event_task[e44e7584-9312-4880-9e14-7ac108a2c773] succeeded in 0.019859400003042538s: {'status': 'recorded', 'click_event_id': 'click_req_fd750ee4082647daa277fd46d5b17581', 'link_id': 1134, 'id': 3349}
+[2026-11-23 00:03:30,069: INFO/MainProcess] Task app.worker.record_click_event_task[035a7079-f376-4684-85d6-4bd1bab8fa45] received
+[2026-11-23 00:03:30,085: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_fd750ee4082647daa277fd46d5b17581
+[2026-11-23 00:03:30,086: INFO/MainProcess] Task app.worker.record_click_event_task[035a7079-f376-4684-85d6-4bd1bab8fa45] succeeded in 0.015604200001689605s: {'status': 'deduplicated', 'click_event_id': 'click_req_fd750ee4082647daa277fd46d5b17581'}
+[2026-11-23 00:03:30,100: INFO/MainProcess] Task app.worker.record_click_event_task[fadda932-4d6e-48ac-ae85-f777fa0937af] received
+[2026-11-23 00:03:30,119: INFO/MainProcess] Task app.worker.record_click_event_task[fadda932-4d6e-48ac-ae85-f777fa0937af] succeeded in 0.018643299998075236s: {'status': 'recorded', 'click_event_id': 'click_req_a52300c5c6d0498485096ae0aed40343', 'link_id': 1134, 'id': 3351}
+[2026-11-23 00:03:30,133: INFO/MainProcess] Task app.worker.record_click_event_task[3b1c6266-b24e-47ad-8ffe-e3556398faaa] received
+[2026-11-23 00:03:30,149: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_a52300c5c6d0498485096ae0aed40343
+[2026-11-23 00:03:30,150: INFO/MainProcess] Task app.worker.record_click_event_task[3b1c6266-b24e-47ad-8ffe-e3556398faaa] succeeded in 0.01652040000044508s: {'status': 'deduplicated', 'click_event_id': 'click_req_a52300c5c6d0498485096ae0aed40343'}
+[2026-11-23 00:03:30,165: INFO/MainProcess] Task app.worker.record_click_event_task[398feb85-3b67-4bed-930f-b696a6f9720a] received
+[2026-11-23 00:03:30,183: INFO/MainProcess] Task app.worker.record_click_event_task[398feb85-3b67-4bed-930f-b696a6f9720a] succeeded in 0.01659940000536153s: {'status': 'recorded', 'click_event_id': 'click_req_4c0c91f2eb3a4917b686f439d1a3a977', 'link_id': 1134, 'id': 3353}
+[2026-11-23 00:03:30,196: INFO/MainProcess] Task app.worker.record_click_event_task[ee9746ff-66bf-425d-a717-c891c555bdc6] received
+[2026-11-23 00:03:30,212: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_4c0c91f2eb3a4917b686f439d1a3a977
+[2026-11-23 00:03:30,213: INFO/MainProcess] Task app.worker.record_click_event_task[ee9746ff-66bf-425d-a717-c891c555bdc6] succeeded in 0.01595699999597855s: {'status': 'deduplicated', 'click_event_id': 'click_req_4c0c91f2eb3a4917b686f439d1a3a977'}
+[2026-11-23 00:03:30,227: INFO/MainProcess] Task app.worker.record_click_event_task[97196c9e-8111-4abe-9d6c-cdfbec850031] received
+[2026-11-23 00:03:30,244: INFO/MainProcess] Task app.worker.record_click_event_task[97196c9e-8111-4abe-9d6c-cdfbec850031] succeeded in 0.01652450000256067s: {'status': 'recorded', 'click_event_id': 'click_req_e0e6dc39e34a4f238e7489ec4e194e84', 'link_id': 1134, 'id': 3355}
+[2026-11-23 00:03:30,257: INFO/MainProcess] Task app.worker.record_click_event_task[2e0cb263-da3b-410e-b74b-14a0f204cc6a] received
+[2026-11-23 00:03:30,273: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_e0e6dc39e34a4f238e7489ec4e194e84
+[2026-11-23 00:03:30,274: INFO/MainProcess] Task app.worker.record_click_event_task[2e0cb263-da3b-410e-b74b-14a0f204cc6a] succeeded in 0.016094600003270898s: {'status': 'deduplicated', 'click_event_id': 'click_req_e0e6dc39e34a4f238e7489ec4e194e84'}
+[2026-11-23 00:03:30,287: INFO/MainProcess] Task app.worker.record_click_event_task[55ab9771-91d2-4d4b-a5b2-0e43a5986389] received
+[2026-11-23 00:03:30,306: INFO/MainProcess] Task app.worker.record_click_event_task[55ab9771-91d2-4d4b-a5b2-0e43a5986389] succeeded in 0.017612900002859533s: {'status': 'recorded', 'click_event_id': 'click_req_2d00c534ca3c4dd79ef008b1bf0a880e', 'link_id': 1134, 'id': 3357}
+[2026-11-23 00:03:30,319: INFO/MainProcess] Task app.worker.record_click_event_task[071df36f-acef-45c2-88f3-e7976d019447] received
+[2026-11-23 00:03:30,334: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_2d00c534ca3c4dd79ef008b1bf0a880e
+[2026-11-23 00:03:30,335: INFO/MainProcess] Task app.worker.record_click_event_task[071df36f-acef-45c2-88f3-e7976d019447] succeeded in 0.01481910000438802s: {'status': 'deduplicated', 'click_event_id': 'click_req_2d00c534ca3c4dd79ef008b1bf0a880e'}
+[2026-11-23 00:03:30,347: INFO/MainProcess] Task app.worker.record_click_event_task[4edf3907-6abc-43a9-a432-3a52390d3de3] received
+[2026-11-23 00:03:30,364: INFO/MainProcess] Task app.worker.record_click_event_task[4edf3907-6abc-43a9-a432-3a52390d3de3] succeeded in 0.015788000004249625s: {'status': 'recorded', 'click_event_id': 'click_req_bf5b7ffc3e0c4c10a615483fe7c6b33d', 'link_id': 1134, 'id': 3359}
+[2026-11-23 00:03:30,377: INFO/MainProcess] Task app.worker.record_click_event_task[f307bd16-214a-4f4e-84db-ea946e9996bb] received
+[2026-11-23 00:03:30,393: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_bf5b7ffc3e0c4c10a615483fe7c6b33d
+[2026-11-23 00:03:30,394: INFO/MainProcess] Task app.worker.record_click_event_task[f307bd16-214a-4f4e-84db-ea946e9996bb] succeeded in 0.0164331999985734s: {'status': 'deduplicated', 'click_event_id': 'click_req_bf5b7ffc3e0c4c10a615483fe7c6b33d'}
+[2026-11-23 00:03:30,409: INFO/MainProcess] Task app.worker.record_click_event_task[cedcc218-258e-4a11-be84-350f0f545f71] received
+[2026-11-23 00:03:30,435: INFO/MainProcess] Task app.worker.record_click_event_task[cedcc218-258e-4a11-be84-350f0f545f71] succeeded in 0.024840300000505522s: {'status': 'recorded', 'click_event_id': 'click_req_cadf4b49fb2f412ba787f651ead25054', 'link_id': 1134, 'id': 3361}
+[2026-11-23 00:03:30,449: INFO/MainProcess] Task app.worker.record_click_event_task[9e11861f-ec73-4a60-bba7-e8150c34398c] received
+[2026-11-23 00:03:30,465: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_cadf4b49fb2f412ba787f651ead25054
+[2026-11-23 00:03:30,466: INFO/MainProcess] Task app.worker.record_click_event_task[9e11861f-ec73-4a60-bba7-e8150c34398c] succeeded in 0.01604380000208039s: {'status': 'deduplicated', 'click_event_id': 'click_req_cadf4b49fb2f412ba787f651ead25054'}
+[2026-11-23 00:03:30,481: INFO/MainProcess] Task app.worker.record_click_event_task[f736f2ff-7fbf-41b0-b147-0599a47b2534] received
+[2026-11-23 00:03:30,500: INFO/MainProcess] Task app.worker.record_click_event_task[f736f2ff-7fbf-41b0-b147-0599a47b2534] succeeded in 0.018365600000834092s: {'status': 'recorded', 'click_event_id': 'click_req_7f66baa9e3b5405f9019c220026a601a', 'link_id': 1134, 'id': 3363}
+[2026-11-23 00:03:30,513: INFO/MainProcess] Task app.worker.record_click_event_task[a0ad33f8-2e95-4137-8c63-d6dacfec1457] received
+[2026-11-23 00:03:30,528: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_7f66baa9e3b5405f9019c220026a601a
+[2026-11-23 00:03:30,528: INFO/MainProcess] Task app.worker.record_click_event_task[a0ad33f8-2e95-4137-8c63-d6dacfec1457] succeeded in 0.014774200004467275s: {'status': 'deduplicated', 'click_event_id': 'click_req_7f66baa9e3b5405f9019c220026a601a'}
+[2026-11-23 00:03:30,542: INFO/MainProcess] Task app.worker.record_click_event_task[ddb24db9-a932-4701-82f0-5e7523eb92e4] received
+[2026-11-23 00:03:30,560: INFO/MainProcess] Task app.worker.record_click_event_task[ddb24db9-a932-4701-82f0-5e7523eb92e4] succeeded in 0.01771609999559587s: {'status': 'recorded', 'click_event_id': 'click_req_9be515bd36564591bf66a9b12fb2f983', 'link_id': 1134, 'id': 3365}
+[2026-11-23 00:03:30,572: INFO/MainProcess] Task app.worker.record_click_event_task[8e71789a-4890-4ce1-a012-e8dadb4ad294] received
+[2026-11-23 00:03:30,587: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_9be515bd36564591bf66a9b12fb2f983
+[2026-11-23 00:03:30,588: INFO/MainProcess] Task app.worker.record_click_event_task[8e71789a-4890-4ce1-a012-e8dadb4ad294] succeeded in 0.014757199998712167s: {'status': 'deduplicated', 'click_event_id': 'click_req_9be515bd36564591bf66a9b12fb2f983'}
+[2026-11-23 00:03:30,601: INFO/MainProcess] Task app.worker.record_click_event_task[f8c2bfe1-45f0-41bf-83a6-63021deacff3] received
+[2026-11-23 00:03:30,619: INFO/MainProcess] Task app.worker.record_click_event_task[f8c2bfe1-45f0-41bf-83a6-63021deacff3] succeeded in 0.01674790000106441s: {'status': 'recorded', 'click_event_id': 'click_req_3a9e73318cc547428a544d0082d45eb8', 'link_id': 1134, 'id': 3367}
+[2026-11-23 00:03:30,631: INFO/MainProcess] Task app.worker.record_click_event_task[eac8a1b4-56e8-40c0-a492-bed38019da2e] received
+[2026-11-23 00:03:30,644: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_3a9e73318cc547428a544d0082d45eb8
+[2026-11-23 00:03:30,645: INFO/MainProcess] Task app.worker.record_click_event_task[eac8a1b4-56e8-40c0-a492-bed38019da2e] succeeded in 0.012815499998396263s: {'status': 'deduplicated', 'click_event_id': 'click_req_3a9e73318cc547428a544d0082d45eb8'}
+[2026-11-23 00:03:30,656: INFO/MainProcess] Task app.worker.record_click_event_task[cada415f-893c-40b7-ac2e-b1073de18d79] received
+[2026-11-23 00:03:30,673: INFO/MainProcess] Task app.worker.record_click_event_task[cada415f-893c-40b7-ac2e-b1073de18d79] succeeded in 0.016014199994970113s: {'status': 'recorded', 'click_event_id': 'click_req_bf1fabc3d69042b6b7c174204c1464a0', 'link_id': 1134, 'id': 3369}
+[2026-11-23 00:03:30,686: INFO/MainProcess] Task app.worker.record_click_event_task[bf66e590-d108-4714-ae05-2edd0fd408e0] received
+[2026-11-23 00:03:30,699: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_bf1fabc3d69042b6b7c174204c1464a0
+[2026-11-23 00:03:30,700: INFO/MainProcess] Task app.worker.record_click_event_task[bf66e590-d108-4714-ae05-2edd0fd408e0] succeeded in 0.01340419999905862s: {'status': 'deduplicated', 'click_event_id': 'click_req_bf1fabc3d69042b6b7c174204c1464a0'}
+[2026-11-23 00:03:30,712: INFO/MainProcess] Task app.worker.record_click_event_task[8d24d011-da09-44f0-9925-0adc9274da8a] received
+[2026-11-23 00:03:30,728: INFO/MainProcess] Task app.worker.record_click_event_task[8d24d011-da09-44f0-9925-0adc9274da8a] succeeded in 0.015232899997499771s: {'status': 'recorded', 'click_event_id': 'click_req_44ca27b3f3c74aa69938c3075d4adf35', 'link_id': 1134, 'id': 3371}
+[2026-11-23 00:03:30,740: INFO/MainProcess] Task app.worker.record_click_event_task[9d238934-8096-43f8-a1a2-01bfa030df27] received
+[2026-11-23 00:03:30,754: INFO/MainProcess] Duplicate click event ignored for click_event_id=click_req_44ca27b3f3c74aa69938c3075d4adf35
+[2026-11-23 00:03:30,755: INFO/MainProcess] Task app.worker.record_click_event_task[9d238934-8096-43f8-a1a2-01bfa030df27] succeeded in 0.014399200001207646s: {'status': 'deduplicated', 'click_event_id': 'click_req_44ca27b3f3c74aa69938c3075d4adf35'}
+[2026-11-23 00:03:30,769: INFO/MainProcess] Task app.worker.record_click_event_task[ef05fbed-7b2b-4e65-b3dc-21d37cd17fe2] received
+[2026-11-23 00:03:30,789: INFO/MainProcess] Task app.worker.record_click_event_task[ef05fbed-7b2b-4e65-b3dc-21d37cd17fe2] succeeded in 0.01920370000152616s: {'status': 'recorded', 'click_event_id': 'click_req_dd1878fda0cc4d68b6da14e3179a4a2f', 'link_id': 1134, 'id': 3373}
+[2026-11-23 00:03:30,803: INFO/MainProcess] Task app.worker.record_click_event_task[43723918-3624-4047-9667-d3b719b43657] received

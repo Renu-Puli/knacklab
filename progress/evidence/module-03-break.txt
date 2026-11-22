@@ -1,0 +1,6 @@
+=== REPRODUCING MODULE 03 BREAK SYMPTOM ===
+Simulating HTTP request: GET /r/abc123
+HTTP Status Code: 405
+Response Body: {"detail":"Method Not Allowed"}
+Symptom Confirmed: Expected 307 Temporary Redirect, but received 405 Method Not Allowed!
+

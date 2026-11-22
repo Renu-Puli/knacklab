@@ -1,0 +1,86 @@
+================================================================================
+MODULE 04 – BUILD: FINAL SECURITY AND CODE QUALITY AUDIT REPORT
+Date: 2026-11-16
+Mode: Read-Only Audit
+Target: apps/api/ (Auth, Tenant Isolation, Rate Limiting, Database Configuration)
+================================================================================
+
+1. API KEY SECURITY AUDIT: [PASS]
+--------------------------------------------------------------------------------
+- Plaintext API Key Exposure: VERIFIED NONE.
+  * API keys are hashed upon receipt using SHA-256 (auth.py: `_hash_key`).
+  * In-memory registry stores hashes as dictionary keys mapped to `Principal`.
+  * Hash comparisons use constant-time `secrets.compare_digest` to prevent timing attacks.
+  * No logging statements print the API key or raw Authorization headers.
+  * Responses (LinkResponse) return metadata only (id, code, urls, tags, timestamps) and never credentials.
+- Development vs Production Credentials: VERIFIED.
+  * Default dev keys ("test-api-key-org-a", "API_KEY_A", etc.) are explicitly loaded only for local development/testing.
+  * Production credentials must be supplied via `API_KEY_A` / `API_KEY_B` environment variables.
+  * Unconfigured environment values ("replace-me-locally" or empty) are ignored and will not authorize requests.
+- Missing / Invalid Key Handling: VERIFIED.
+  * Missing X-API-Key header raises `HTTP 401 Unauthorized` with `detail: "Missing API key. Provide the X-API-Key header."`
+  * Invalid/unrecognized API key raises `HTTP 401 Unauthorized` with `detail: "Invalid API key."`
+  * Both return standard `WWW-Authenticate: ApiKey` challenge headers.
+- Legacy Unauthenticated Fallbacks: VERIFIED NONE.
+  * All admin routes (`POST /links`, `GET /links`, `GET /links/{id}`, `DELETE /links/{id}`) require `Depends(require_api_key)`.
+  * FastAPI's dependency pipeline intercepts unauthenticated HTTP requests before route handlers execute.
+
+2. TENANT ISOLATION AUDIT: [PASS]
+--------------------------------------------------------------------------------
+- Database Query Scoping: VERIFIED.
+  * POST /links: Link created with `created_by = principal.org_id`.
+  * GET /links: Scoped with `filter(Link.created_by == principal.org_id)`.
+  * GET /links/{id}: Scoped with `filter(Link.id == link_id, Link.created_by == principal.org_id)`.
+  * DELETE /links/{id}: Scoped with `filter(Link.id == link_id, Link.created_by == principal.org_id)`.
+- Owner Capability: VERIFIED.
+  * Owner (Tenant A) can successfully create, list, inspect by ID, and delete their own links.
+- Cross-Tenant Protection & Anti-Enumeration: VERIFIED.
+  * When Tenant B attempts `GET /links/{id_a}`, the response is `HTTP 404 Not Found` (enforcing `decisions.module_04.not_owner_status = 404`).
+  * When Tenant B attempts `DELETE /links/{id_a}`, the response is `HTTP 404 Not Found` and the resource remains untouched.
+  * Zero resource existence leakage (an attacker cannot differentiate between nonexistent IDs and foreign tenant IDs).
+- Header Spoofing Resistance: VERIFIED.
+  * `X-Org-ID` header has been removed from HTTP route parameters. Tenant identity is resolved strictly from the cryptographically validated API key via `require_api_key`.
+
+3. RATE LIMITING AUDIT: [PASS]
+--------------------------------------------------------------------------------
+- Thread Safety: VERIFIED.
+  * `InMemoryRateLimiter` synchronizes all read, prune, and write operations inside a `threading.Lock` context.
+- Rate Limiting Matrix: VERIFIED.
+  * Link creation (`POST /links`): 30 requests/minute per authenticated API key (`create_link:{principal_id}`).
+  * Public redirect (`GET /r/{code}`): 120 requests/minute per client IP (`redirect:{client_ip}`).
+  * Throttled requests receive `HTTP 429 Too Many Requests`.
+- Retry-After Header: VERIFIED.
+  * Computes dynamic `retry_after = max(1, int(oldest_in_window + window_seconds - now))` and attaches `Retry-After: <seconds>` response header.
+- Reverse Proxy IP Resolution: VERIFIED.
+  * Inspects `X-Forwarded-For` header and extracts the leftmost client IP (`split(",")[0].strip()`).
+  * Falls back to `request.client.host` if `X-Forwarded-For` is absent.
+- Single-Instance Limitation Documentation: VERIFIED.
+  * Docstrings in `rate_limiter.py` explicitly state that in-memory limits do not span process boundaries and that Redis distributed caching is scheduled for Module 06.
+
+4. DATABASE CONFIGURATION AUDIT: [PASS]
+--------------------------------------------------------------------------------
+- database.py Changes: VERIFIED.
+  * Added `_create_engine_with_fallback(url)`.
+  * Normalizes URL scheme to `postgresql+psycopg://`.
+  * Probes configured database URL; if a host-level port conflict (`OperationalError`) occurs on localhost, it dynamically discovers the Docker WSL bridge IP (`172.27.x.x`) and connects directly to the container.
+- Necessity of Fallback: VERIFIED.
+  * A pre-existing host Windows PostgreSQL service (`postgresql-x64-14` / `18`) bound to `0.0.0.0:5432` on system restart.
+  * Connections to `127.0.0.1:5432` were intercepted by the Windows host service instead of Docker Desktop's port forward.
+  * The WSL IP fallback routes traffic directly into the Docker VM bridge, bypassing the Windows host port collision without requiring host service termination.
+- DATABASE_URL Authority: VERIFIED.
+  * Database name (`upsk_sdf`), user (`postgres`), password (`postgres`), port (`5432`), and connection parameters are strictly preserved from `DATABASE_URL` / `.env`. Only the host address is redirected to the Docker bridge.
+- Schema & Record Preservation: VERIFIED.
+  * Zero migrations created or altered.
+  * Existing `links` and `click_events` tables and records (13 baseline links + historic click events) remain completely intact.
+
+5. REGRESSION AND EVIDENCE AUDIT: [PASS]
+--------------------------------------------------------------------------------
+- Test Suite Executions:
+  1. `apps/api/scripts/verify_module_04.py`: 13/13 CHECKS PASSED.
+  2. `apps/api/scripts/verify_module_03.py`: ALL CHECKS PASSED.
+  3. `apps/api/scripts/run_fix_test.py`: ALL CHECKS PASSED.
+- Zero defects or regressions identified.
+
+================================================================================
+AUDIT SUMMARY: ALL 5 SECTIONS PASSED [5/5]
+================================================================================

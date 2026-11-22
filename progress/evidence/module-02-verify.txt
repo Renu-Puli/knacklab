@@ -1,0 +1,4 @@
+﻿Link already exists id=1 code=abc123
+Inserted click id=2 for link_id=1
+Lookup URL: https://example.com
+Click count for abc123: 2

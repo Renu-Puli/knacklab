@@ -1,0 +1,22 @@
+{
+  "track": "system-design-fundamentals-extension",
+  "base_curriculum": {
+    "track": "system-design-fundamentals-launchpad",
+    "modules_completed": [1, 2, 3, 4, 5, 6, 7],
+    "status": "completed",
+    "official": true
+  },
+  "custom_extension": {
+    "modules": [8, 9, 10],
+    "modules_completed": [8, 9, 10],
+    "status": "completed",
+    "official": false,
+    "last_completed_module": 10,
+    "scores": {
+      "module_08": 10.0,
+      "module_09": 10.0,
+      "module_10": 10.0
+    },
+    "completed_at": "2026-11-23T00:25:00+05:30"
+  }
+}

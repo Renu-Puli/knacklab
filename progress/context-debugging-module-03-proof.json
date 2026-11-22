@@ -1,0 +1,17 @@
+{
+  "module": 3,
+  "step": "context",
+  "micro_exercise": {
+    "q1_questions": [
+      "Under what conditions does the slowness occur? Which endpoint, operation, user, tenant, or workflow is affected?",
+      "What variables differ between slow and fast requests? Check payload size, database volume, cache state, concurrency, network conditions, and background activity.",
+      "Can I quantify and localize the slowdown? Compare response times and identify whether the latency originates in the application, database, cache, network, or external service."
+    ],
+    "q2_reproduction_distinction": {
+      "cannot_reproduce": "Describes current inability to trigger the bug under tested conditions; honest statement of observation.",
+      "not_reproducible": "Flawed absolute claim that the bug cannot exist or occur; dismissive of user reports.",
+      "standup_communication": "I haven't reproduced the issue yet. I'm investigating the trigger variables, including timing, concurrency, payload size, and cache state."
+    }
+  },
+  "timestamp": "2026-11-22T04:01:25+05:30"
+}

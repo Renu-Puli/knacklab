@@ -1,0 +1,44 @@
+{
+  "current_module": 7,
+  "current_step": "completed",
+  "modules_completed": [1, 2, 3, 4, 5, 6, 7],
+  "next_module": null,
+  "track_completed": true,
+  "track": "debugging-incident-response",
+  "decision_monorepo": "B",
+  "framework": "fastapi",
+  "scenario": "b2b_multi_tenant",
+  "api_root": "apps/api/",
+  "decisions": {
+    "module_01": {
+      "monorepo": "B"
+    },
+    "module_02": {
+      "log_strategy": "B"
+    },
+    "module_03": {
+      "repro_approach": "synthetic_repro"
+    },
+    "module_04": {
+      "auth_method": "api_key",
+      "not_owner_status": 404,
+      "rate_limits": {
+        "create_link_per_min": 30,
+        "redirect_per_min": 120
+      }
+    },
+    "module_05": {
+      "error_strategy": "graceful"
+    },
+    "module_06": {
+      "constraints_twist_type": "org_scoping",
+      "constraints_twist_action": "implement_now",
+      "cache_strategy": "cache_aside"
+    },
+    "module_07": {
+      "jobs_strategy": "async_queue",
+      "retention_days": 30
+    }
+  },
+  "last_updated": "2026-11-22"
+}

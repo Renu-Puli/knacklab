@@ -1,0 +1,126 @@
+================================================================================
+MODULE 06 – STEP 5: BREAK REPRODUCTION & SYMPTOM EVIDENCE
+================================================================================
+Timestamp: 2026-11-19T21:48:00+05:30
+Assigned Difficulty: Medium – Cache not invalidated on update
+Injected Bug: Omission of Redis cache invalidation in PATCH /links/{link_id}
+
+--------------------------------------------------------------------------------
+1. INJECTED BUG DESCRIPTION & LOCATION
+--------------------------------------------------------------------------------
+File Modified:
+- `apps/api/app/routers/links.py` (inside `update_link`)
+
+Backup File:
+- `apps/api/app/routers/links.py.m06.bak` (Verified exact pre-break state)
+- `apps/api/app/routers/links.py.bak` (Preserved Module 04/05 baseline backup)
+
+Exact Code Location:
+Lines 196-206 of `apps/api/app/routers/links.py`:
+```python
+    if updated:
+        try:
+            db.commit()
+            db.refresh(link)
+        except Exception:
+            db.rollback()
+            raise
+
+        # BUG INJECTED (Module 06 - BREAK Medium: Cache not invalidated on update)
+        # Invalidation call is omitted; Redis retains stale destination
+        # await invalidate_redirect_target(link.code, org_id=effective_org)
+```
+
+Root Cause:
+When an authenticated user issues a `PATCH /links/{id}` to update the target `long_url`,
+the database transaction succeeds and commits the new destination to PostgreSQL.
+However, because the `invalidate_redirect_target` invocation was omitted, the corresponding
+Redis cache key (`link:{code}`) is never deleted or updated.
+Because public redirects (`GET /r/{code}`) employ a Cache-Aside strategy that checks Redis
+first before querying PostgreSQL, subsequent visitors continue to be served the stale,
+outdated destination cached in Redis until the key's TTL expires.
+
+--------------------------------------------------------------------------------
+2. AFFECTED API BEHAVIOR & SECURITY / CONSISTENCY PROPERTIES
+--------------------------------------------------------------------------------
+- Data Consistency Violation:
+  The database (PostgreSQL source of truth) holds the updated destination URL, but the
+  cache (Redis) continues serving the old destination.
+- Stale Reads / User Confusion:
+  The administrative client receives HTTP 200 OK with the new target URL, but end users
+  clicking the short link are redirected to the old URL.
+- Security / Phishing Risk:
+  If a link is updated to mitigate a compromised or malicious destination, the redirect
+  continues delivering traffic to the old destination for up to 1 hour (TTL).
+
+--------------------------------------------------------------------------------
+3. STEP-BY-STEP REPRODUCTION & SYMPTOM EVIDENCE
+--------------------------------------------------------------------------------
+Reproduction Script: `apps/api/scripts/reproduce_module_06_break.py`
+Command Run: `apps\api\.venv\Scripts\python.exe apps\api\scripts\reproduce_module_06_break.py`
+
+Live Execution Log:
+======================================================================
+MODULE 06 BREAK REPRODUCTION: Cache Not Invalidated on Update
+======================================================================
+[Step 1] Created short link:
+  Link ID:     612
+  Short Code:  FbVkSUz
+  Initial URL: https://example.com/initial-v1-destination
+  HTTP Response: 201 Created
+
+[Step 2] Warmed cache via GET /r/FbVkSUz:
+  HTTP Status: 307 Temporary Redirect
+  Location:    https://example.com/initial-v1-destination
+
+[Step 3] Verified Redis cache entry (link:FbVkSUz):
+  Cached Long URL: https://example.com/initial-v1-destination
+  Cached Org ID:   org_a
+
+[Step 4] Submitted PATCH /links/612:
+  HTTP Status:  200 OK
+  Payload sent: {"long_url": "https://example.com/updated-v2-destination-2026"}
+  Returned URL: https://example.com/updated-v2-destination-2026
+
+[Step 5] Direct PostgreSQL query (Source of Truth):
+  PostgreSQL long_url: https://example.com/updated-v2-destination-2026
+  -> PostgreSQL successfully committed the new URL.
+
+[Step 6] Inspecting Redis cache entry after PATCH:
+  Redis key 'link:FbVkSUz' still exists!
+  Redis cached long_url: https://example.com/initial-v1-destination
+  [BUG OBSERVED] Redis still holds the STALE OLD URL!
+
+[Step 7] Requesting public redirect GET /r/FbVkSUz:
+  HTTP Status Code: 307 Temporary Redirect
+  Location Header:  https://example.com/initial-v1-destination
+  Expected (PostgreSQL): https://example.com/updated-v2-destination-2026
+  Actual (Served):       https://example.com/initial-v1-destination
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SYMPTOM CONFIRMED: STALE REDIRECT SERVED TO CLIENT!
+PostgreSQL holds: https://example.com/updated-v2-destination-2026
+Client received:  https://example.com/initial-v1-destination (STALE!)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+--------------------------------------------------------------------------------
+4. EXPECTED VS ACTUAL BEHAVIOR
+--------------------------------------------------------------------------------
+Expected Behavior:
+- After `PATCH /links/{id}` commits to PostgreSQL, Redis key `link:{code}` is evicted.
+- Subsequent `GET /r/{code}` encounters a cache miss, fetches the updated URL from PostgreSQL,
+  caches the new URL in Redis, and redirects the client to `https://example.com/updated-v2-destination-2026`.
+
+Actual Behavior:
+- `PATCH /links/{id}` updates PostgreSQL but leaves `link:{code}` untouched in Redis.
+- Subsequent `GET /r/{code}` hits Redis, reads the old cached destination, and redirects
+  the client to `https://example.com/initial-v1-destination`.
+
+--------------------------------------------------------------------------------
+5. SAFEGUARDS & ENVIRONMENT PRESERVATION
+--------------------------------------------------------------------------------
+- PostgreSQL database `upsk_sdf` preserved with zero truncations or schema resets.
+- Existing Docker containers (`upsk-sdf-postgres` and `bootcamp-redis`) running normally.
+- Preserved backups: `apps/api/app/routers/links.py.m06.bak` and `apps/api/app/routers/links.py.bak`.
+- No fix has been applied.
+================================================================================

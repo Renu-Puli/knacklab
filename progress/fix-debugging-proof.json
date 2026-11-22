@@ -1,0 +1,10 @@
+{
+  "summary": "Completed Module 01 STEP 6: FIX. Verified deterministic ordering fix .order_by(Link.created_at.desc(), Link.id.desc()) in apps/api/app/routers/links.py. Ran reproducible concurrent insert simulation in scripts/verify_module_01_fix.py: demonstrated that while static ordering is strictly stable with zero overlap across pages, concurrent insertions between page fetches prepended new records and pushed boundary records 870 and 871 into Page 2, proving the fundamental offset drift limitation of offset pagination under mutating datasets.",
+  "evidence": [
+    "Confirmed deterministic ordering implementation .order_by(Link.created_at.desc(), Link.id.desc()) in apps/api/app/routers/links.py",
+    "Verified static baseline pagination on 35 records: Page 1, Page 2, Page 3 showed zero duplicates (set())",
+    "Executed concurrent insert simulation: inserted 2 records (881, 882) between Page 1 and Page 2 fetches, reproducing boundary drift with duplicate IDs {870, 871}",
+    "Documented distinction: deterministic sorting eliminates internal tuple shuffling on static queries, but offset pagination is inherently vulnerable to boundary drift when records are inserted before the current offset",
+    "Recorded exact test outputs and architectural analysis in progress/module-01-diagnosis.md without modifying database records"
+  ]
+}

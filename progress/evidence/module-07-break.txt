@@ -1,0 +1,81 @@
+================================================================================
+MODULE 07 – STEP 5: BREAK REPRODUCTION & SYMPTOM EVIDENCE
+================================================================================
+Timestamp: 2026-11-20T20:28:25+05:30
+Assigned Difficulty: Medium – Job not idempotent (duplicates)
+Injected Bug: Omission of click_event_id and ON CONFLICT DO NOTHING deduplication in record_click_event_task
+
+--------------------------------------------------------------------------------
+1. INJECTED BUG DESCRIPTION & LOCATION
+--------------------------------------------------------------------------------
+File Modified:
+- `apps/api/app/worker.py` (inside `record_click_event_task`)
+
+Backup File:
+- `apps/api/app/worker.py.m07.bak` (Verified exact pre-break baseline)
+
+Exact Code Location:
+Lines 54-63 of `apps/api/app/worker.py`:
+```python
+    db: Session = SessionLocal()
+    try:
+        # BUG INJECTED (Module 07 - BREAK: Medium - Job not idempotent)
+        # Omission of click_event_id and conflict deduplication causes duplicate inserts on retry
+        stmt = insert(ClickEvent).values(
+            link_id=link_id,
+            clicked_at=clicked_at_dt,
+            user_agent=user_agent[:512] if user_agent else None,
+            referrer=referrer[:1024] if referrer else None,
+            ip_hash=ip_hash,
+        ).returning(ClickEvent.id)
+```
+
+Root Cause Analysis:
+In at-least-once message queues, worker crashes or network timeouts after a database
+commit prevent the acknowledgment (`ACK`) from reaching Redis, prompting the broker
+to re-deliver the task.
+When `click_event_id` and the `ON CONFLICT (click_event_id) DO NOTHING` clause are omitted
+from the SQL insert, the worker treats every delivery as an independent new event.
+Replayed or retried tasks insert redundant rows into `click_events`, corrupting analytical
+counters (`GET /links/{id}/analytics`) and double-counting client clicks.
+
+--------------------------------------------------------------------------------
+2. LIVE REPRODUCTION LOGS
+--------------------------------------------------------------------------------
+Command: python scripts/reproduce_module_07_break.py
+Status: FAILURE CONFIRMED (Job is not idempotent; duplicate rows created)
+
+Execution Output:
+======================================================================
+MODULE 07 BREAK REPRODUCTION: Medium – Job Not Idempotent (Duplicates)
+======================================================================
+[Step 1] Created short link: code=TKspGdL, id=765
+[Step 2] Baseline analytics: total_clicks = 0
+
+[Step 3] Processing click event (First Attempt): click_event_id=evt_break_293b443c357c
+  -> Worker response: {'status': 'recorded', 'click_event_id': 'evt_break_293b443c357c', 'link_id': 765, 'id': 2037}
+  -> Analytics count after 1 click: total_clicks = 1
+
+[Step 4] Simulating Celery task retry/redelivery with IDENTICAL payload...
+  -> Re-dispatching click_event_id=evt_break_293b443c357c
+  -> Worker response: {'status': 'recorded', 'click_event_id': 'evt_break_293b443c357c', 'link_id': 765, 'id': 2038}
+
+[Step 5] Analytics count after simulated retry: total_clicks = 2
+  -> Total click_events rows in DB for link_id 765: 2
+
+----------------------------------------------------------------------
+REPRODUCTION RESULT:
+FAILURE CONFIRMED: Job is NOT idempotent!
+A single click event was processed twice on retry, resulting in 2 recorded clicks.
+Expected behavior: total_clicks should remain 1 because click_event_id was identical.
+Observed behavior: duplicate record was inserted, inflating analytics metrics.
+----------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+3. STATE CONFIRMATION
+--------------------------------------------------------------------------------
+- Docker Containers: upsk-sdf-postgres and bootcamp-redis are running and healthy.
+- PostgreSQL Database: upsk_sdf intact; zero data loss.
+- Redis Cache & Broker: intact on port 6379.
+- Baseline Backup: preserved at apps/api/app/worker.py.m07.bak.
+================================================================================

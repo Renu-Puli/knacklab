@@ -1,0 +1,248 @@
+import string
+import secrets
+from datetime import datetime, timezone
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
+from app.database import get_db
+from app.models import Link
+from app.schemas.link import LinkCreate, LinkResponse, LinkUpdate
+from app.auth import require_api_key, Principal
+from app.rate_limiter import rate_limit_link_creation
+from app.cache import invalidate_redirect_target
+
+router = APIRouter(prefix="/links", tags=["Links"])
+
+CODE_CHARS = string.ascii_letters + string.digits
+
+
+def generate_short_code(db: Session, length: int = 7) -> str:
+    """Generate a collision-resistant unique short code."""
+    for _ in range(10):
+        code = "".join(secrets.choice(CODE_CHARS) for _ in range(length))
+        if not db.query(Link).filter_by(code=code).first():
+            return code
+    # Fallback to longer code if high collision rate
+    return "".join(secrets.choice(CODE_CHARS) for _ in range(length + 2))
+
+
+@router.post("", response_model=LinkResponse, status_code=status.HTTP_201_CREATED)
+def create_link(
+    payload: LinkCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_api_key),
+    tenant_id: Optional[str] = None,
+):
+    # Support backward-compatibility for direct unit test calls specifying tenant_id
+    effective_principal = Principal(principal_id=tenant_id, org_id=tenant_id) if tenant_id else principal
+
+    # Enforce rate limiting: 30 link creations per minute per authenticated API key
+    rate_limit_link_creation(effective_principal)
+
+    tags_str = ",".join(payload.tags) if payload.tags else None
+
+    # Retry loop in case of concurrent code generation collision
+    max_retries = 3
+    for attempt in range(max_retries):
+        code = generate_short_code(db)
+        link = Link(
+            code=code,
+            long_url=payload.long_url,
+            created_by=effective_principal.org_id,
+            expires_at=payload.expires_at,
+            tags=tags_str,
+        )
+        try:
+            db.add(link)
+            db.commit()
+            db.refresh(link)
+            break
+        except IntegrityError:
+            db.rollback()
+            if attempt == max_retries - 1:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate a unique short code. Please try again."
+                )
+        except Exception:
+            db.rollback()
+            raise
+
+    base_url = str(request.base_url).rstrip("/")
+    short_url = f"{base_url}/r/{link.code}"
+
+    return LinkResponse(
+        id=link.id,
+        code=link.code,
+        short_url=short_url,
+        long_url=link.long_url,
+        created_by=link.created_by,
+        created_at=link.created_at,
+        expires_at=link.expires_at,
+        tags=link.tags,
+    )
+
+
+@router.get("", response_model=List[LinkResponse])
+def list_links(
+    request: Request,
+    skip: int = Query(default=0, ge=0, description="Pagination offset"),
+    limit: int = Query(default=20, ge=1, le=100, description="Items per page"),
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_api_key),
+    tenant_id: Optional[str] = None,
+):
+    effective_org = tenant_id if tenant_id else principal.org_id
+
+    # Enforce tenant scoping: only return links created by this tenant
+    links = (
+        db.query(Link)
+        .filter(Link.created_by == effective_org)
+        .order_by(Link.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+    base_url = str(request.base_url).rstrip("/")
+    return [
+        LinkResponse(
+            id=l.id,
+            code=l.code,
+            short_url=f"{base_url}/r/{l.code}",
+            long_url=l.long_url,
+            created_by=l.created_by,
+            created_at=l.created_at,
+            expires_at=l.expires_at,
+            tags=l.tags,
+        )
+        for l in links
+    ]
+
+
+@router.get("/{link_id}", response_model=LinkResponse)
+def get_link_by_id(
+    link_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_api_key),
+    tenant_id: Optional[str] = None,
+):
+    effective_org = tenant_id if tenant_id else principal.org_id
+
+    # Enforce tenant scoping & not_owner_status = 404:
+    # If the link doesn't exist or belongs to another tenant, return 404 to avoid enumeration
+    link = (
+        db.query(Link)
+        .filter(Link.id == link_id, Link.created_by == effective_org)
+        .first()
+    )
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Link not found"
+        )
+
+    base_url = str(request.base_url).rstrip("/")
+    return LinkResponse(
+        id=link.id,
+        code=link.code,
+        short_url=f"{base_url}/r/{link.code}",
+        long_url=link.long_url,
+        created_by=link.created_by,
+        created_at=link.created_at,
+        expires_at=link.expires_at,
+        tags=link.tags,
+    )
+
+
+@router.patch("/{link_id}", response_model=LinkResponse)
+async def update_link(
+    link_id: int,
+    payload: LinkUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_api_key),
+    tenant_id: Optional[str] = None,
+):
+    effective_org = tenant_id if tenant_id else principal.org_id
+
+    # Enforce tenant scoping & not_owner_status = 404:
+    link = (
+        db.query(Link)
+        .filter(Link.id == link_id, Link.created_by == effective_org)
+        .first()
+    )
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Link not found"
+        )
+
+    updated = False
+    if payload.long_url is not None:
+        link.long_url = payload.long_url
+        updated = True
+    if payload.expires_at is not None:
+        link.expires_at = payload.expires_at
+        updated = True
+    if payload.tags is not None:
+        link.tags = ",".join(payload.tags) if payload.tags else None
+        updated = True
+
+    if updated:
+        try:
+            db.commit()
+            db.refresh(link)
+        except Exception:
+            db.rollback()
+            raise
+
+        # Invalidate cached redirect target so subsequent redirects fetch updated target
+        await invalidate_redirect_target(link.code, org_id=effective_org)
+
+    base_url = str(request.base_url).rstrip("/")
+    return LinkResponse(
+        id=link.id,
+        code=link.code,
+        short_url=f"{base_url}/r/{link.code}",
+        long_url=link.long_url,
+        created_by=link.created_by,
+        created_at=link.created_at,
+        expires_at=link.expires_at,
+        tags=link.tags,
+    )
+
+
+@router.delete("/{link_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_link(
+    link_id: int,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(require_api_key),
+    tenant_id: Optional[str] = None,
+):
+    effective_org = tenant_id if tenant_id else principal.org_id
+
+    # Enforce tenant scoping & not_owner_status = 404 on delete:
+    link = (
+        db.query(Link)
+        .filter(Link.id == link_id, Link.created_by == effective_org)
+        .first()
+    )
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Link not found"
+        )
+
+    code_to_invalidate = link.code
+    db.delete(link)
+    db.commit()
+
+    # Invalidate cached redirect target in Redis
+    await invalidate_redirect_target(code_to_invalidate, org_id=effective_org)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

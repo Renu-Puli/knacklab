@@ -1,0 +1,81 @@
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Text,
+    Boolean,
+    ForeignKey,
+    func,
+)
+from sqlalchemy.orm import relationship
+
+from app.database import Base
+
+
+class Link(Base):
+    __tablename__ = "links"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    code = Column(String(12), unique=True, nullable=False, index=True)
+
+    long_url = Column(Text, nullable=False)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
+
+    # Tenant ownership
+    created_by = Column(String, nullable=False, index=True)
+
+    # Optional fields
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+
+    tags = Column(String, nullable=True)
+
+    # Module 10: Backward-compatible Expand attributes with server defaults
+    is_active = Column(Boolean, nullable=True, server_default="true", default=True)
+
+    title = Column(String(255), nullable=True)
+
+    # Relationship with click events
+    clicks = relationship(
+        "ClickEvent",
+        back_populates="link",
+        cascade="all, delete-orphan"
+    )
+
+
+class ClickEvent(Base):
+    __tablename__ = "click_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    click_event_id = Column(String(64), unique=True, nullable=True, index=True)
+
+    link_id = Column(
+        Integer,
+        ForeignKey("links.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    clicked_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True
+    )
+
+    user_agent = Column(String, nullable=True)
+
+    referrer = Column(String, nullable=True)
+
+    # SHA-256 hash of requester IP, not the raw IP
+    ip_hash = Column(String(64), nullable=True)
+
+    # Relationship back to Link
+    link = relationship("Link", back_populates="clicks")

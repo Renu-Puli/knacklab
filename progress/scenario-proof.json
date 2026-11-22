@@ -1,0 +1,8 @@
+{
+  "summary": "Selected B2B Multi-Tenant SaaS (b2b_multi_tenant) product scenario",
+  "evidence": [
+    "Learner chose b2b_multi_tenant to focus on tenant isolation, IDOR prevention, and tenant-scoped caching",
+    "Recorded product_scenario in progress/state.json"
+  ]
+}
+

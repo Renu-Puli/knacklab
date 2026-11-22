@@ -1,0 +1,175 @@
+================================================================================
+MODULE 06 – STEP 3: BUILD EVIDENCE
+Caching With Redis (Cache-Aside Pattern & Multi-Tenant Organization Scoping)
+================================================================================
+Timestamp: 2026-11-18T14:25:00Z
+Product Scenario: b2b_multi_tenant
+Constraints Twist: org_scoping (Option A – implement_now)
+Cache Strategy Decision: Option A – cache_aside
+PostgreSQL Database: upsk_sdf (Container: upsk-sdf-postgres, Port 5432)
+Redis Cache: redis:alpine (Container: bootcamp-redis, Port 6379, redis://localhost:6379)
+
+--------------------------------------------------------------------------------
+1. ARCHITECTURAL IMPLEMENTATION OVERVIEW
+--------------------------------------------------------------------------------
+A. Asynchronous Redis Client (apps/api/app/cache.py):
+   - Client: redis.asyncio (redis-py v8.1.0) with connection pool.
+   - Timeouts: socket_connect_timeout=2.0s, socket_timeout=1.0s, health_check_interval=30s.
+   - Lifecycle: Async lifespan manager in app/main.py (init_redis on startup, close_redis on shutdown).
+   - Metrics: In-memory observability counters for hits, misses, errors, and invalidations.
+
+B. Cache Service Helpers & Multi-Tenant Scoping:
+   - get_redirect_target(code):
+     Retrieves cached JSON payload {"long_url", "org_id", "link_id", "expires_at", "cached_at"}.
+     Validates explicit link expiration; purges expired entries automatically.
+     Returns None on cache miss or Redis failure to trigger PostgreSQL fallback.
+   - set_redirect_target(code, long_url, ttl_seconds, org_id, link_id, expires_at):
+     Populates cache with short link metadata including tenant org_id.
+     Caps TTL based on link.expires_at to ensure cache never outlives link validity.
+   - invalidate_redirect_target(code, org_id):
+     Evicts cached key "link:{code}".
+     Enforces tenant scoping: rejects invalidation if requesting tenant does not own the entry.
+
+C. Redirect Flow Integration (apps/api/app/routers/redirect.py):
+   - GET /r/{code}:
+     1. Checks Redis cache first via get_redirect_target(code).
+     2. Cache Hit -> Returns HTTP 307 immediately with Location header; records click analytics.
+     3. Cache Miss / Redis Error -> Queries PostgreSQL source of truth; on success populates Redis with TTL; returns HTTP 307.
+     4. Redis Down Graceful Degradation -> Catches RedisError/socket timeouts, logs warning, falls back seamlessly to PostgreSQL.
+   - Direct invocation dual-compatibility:
+     DualRedirectResponse supports both synchronous direct function invocations (Module 03 unit tests)
+     and asynchronous ASGI HTTP pipelines (uvicorn/TestClient) without event loop conflicts.
+
+D. Administrative Invalidation (apps/api/app/routers/links.py):
+   - PATCH /links/{id}:
+     Updates target long_url, expires_at, or tags within tenant scope (created_by == principal.org_id).
+     Commits to PostgreSQL and invalidates Redis cache entry via invalidate_redirect_target.
+   - DELETE /links/{id}:
+     Deletes record within tenant scope and invalidates Redis cache entry.
+
+--------------------------------------------------------------------------------
+2. LIVE EVIDENCE LOGS: MODULE 06 VERIFICATION SUITE
+--------------------------------------------------------------------------------
+Command: python apps/api/verify_module_06.py
+Status: PASS (6/6 tests passed)
+
+Log Output:
+============================================================
+Running Module 06 Verification Suite: Caching With Redis
+============================================================
+Connected to Redis cache successfully
+
+[Test 1] Testing Cache-Aside Flow (Miss -> DB -> Set -> Hit)...
+POST /links completed with status 201 (link_id: 609, code: qhlY5wG)
+GET /r/qhlY5wG (Attempt 1):
+  - Cache Miss -> Query PostgreSQL -> Populate Redis
+  - HTTP Status: 307 Temporary Redirect
+  - Location: https://example.com/module06-test-1
+  - Cache payload in Redis: {"long_url": "https://example.com/module06-test-1", "org_id": "org_a", "link_id": 609, "expires_at": null, "cached_at": "2026-11-18T14:03:05.265699+00:00"}
+GET /r/qhlY5wG (Attempt 2):
+  - Cache Hit -> Read from Redis directly
+  - HTTP Status: 307 Temporary Redirect
+  - Location: https://example.com/module06-test-1
+  -> Cache-aside miss then hit confirmed successfully.
+
+[Test 2] Testing Cache Invalidation on Link Update (PATCH)...
+PATCH /links/609 payload: {"long_url": "https://example.com/module06-updated-url"}
+  - PostgreSQL transaction committed
+  - Cache entry "link:qhlY5wG" evicted from Redis
+GET /r/qhlY5wG:
+  - Cache Miss -> Query PostgreSQL -> Populate Redis with updated destination
+  - HTTP Status: 307 Temporary Redirect
+  - Location: https://example.com/module06-updated-url
+  -> Redirect after update correctly routed to: https://example.com/module06-updated-url
+
+[Test 3] Testing Cache Invalidation on Link Deletion (DELETE)...
+DELETE /links/609:
+  - PostgreSQL transaction deleted record
+  - Cache entry "link:qhlY5wG" evicted from Redis
+GET /r/qhlY5wG:
+  - Cache Miss -> PostgreSQL lookup returns None
+  - HTTP Status: 404 Not Found
+  -> Redirect after deletion correctly returned 404.
+
+[Test 4] Testing Tenant Scoping & Isolation in Cache...
+POST /links for Tenant A (org_a): code: zoSsYhY, id: 610
+GET /r/zoSsYhY -> Cached with org_id: org_a
+Tenant B (org_b) attempts PATCH /links/610 -> HTTP 404 (Not Owner)
+Tenant B (org_b) attempts DELETE /links/610 -> HTTP 404 (Not Owner)
+Cross-tenant invalidation call: invalidate_redirect_target("zoSsYhY", org_id="org_b")
+  - Log: "Tenant isolation blocked invalidation: org_b != org_a"
+  - Entry remains intact in Redis cache
+  -> Cross-tenant mutation and eviction blocked successfully.
+
+[Test 5] Testing Graceful Degradation (Redis Down Fallback)...
+Created drill link in PostgreSQL: code: nf2JSWY, target: https://fallback.com/graceful-degradation
+Simulated Redis unavailability (Redis client disabled / connection refused)
+GET /r/nf2JSWY:
+  - Redis error caught and logged
+  - Fallback to PostgreSQL database lookup
+  - HTTP Status: 307 Temporary Redirect
+  - Location: https://fallback.com/graceful-degradation
+  -> Redirect succeeded via PostgreSQL fallback while Redis was unavailable.
+
+[Test 6] Testing Link Expiration in Cache...
+  - Expired link set_redirect_target rejected (actual_ttl <= 0)
+  - Expired key in Redis detected by get_redirect_target, purged, and returned None
+  -> Expired cache entry correctly identified, rejected/purged, and returned None.
+
+============================================================
+Module 06 Verification Complete: 6/6 tests passed.
+============================================================
+
+--------------------------------------------------------------------------------
+3. FULL REGRESSION TEST RESULTS ACROSS ALL MODULES
+--------------------------------------------------------------------------------
+1. Module 06 (Caching With Redis):
+   - File: apps/api/verify_module_06.py
+   - Result: 6/6 PASSED (0 failures)
+
+2. Module 05 (FastAPI Logging & Error Handling):
+   - File: apps/api/verify_module_05.py
+   - Result: 9/9 PASSED (0 failures)
+   - Checks: Validation 422 envelope, 500 internal error envelope, correlation ID propagation, secret redaction, rate limiting 429 envelope.
+
+3. Module 04 (Authentication, Tenant Isolation, Rate Limiting):
+   - File: apps/api/scripts/verify_module_04.py
+   - Result: 13/13 PASSED (0 failures)
+   - Checks: 401 unauthenticated, 401 invalid key, tenant isolation for org_a/org_b, 404 on cross-tenant get/delete, rate limit 30 link creates/min, rate limit 120 redirects/min, URL validation security, click tracking.
+
+4. Module 03 (Fix Verification & Core Code Review):
+   - File: apps/api/scripts/run_fix_test.py -> 4/4 PASSED
+   - File: apps/api/scripts/verify_module_03.py -> 5/5 PASSED
+   - Checks: Direct sync redirect 307, 404 unknown code, 410 expired link, analytics resilience on DB failure, code collision retry loop.
+
+Total Test Count: 37 tests executed across 5 test suites.
+Total Passed: 37 / 37 (100% pass rate, 0 regressions).
+
+--------------------------------------------------------------------------------
+4. INFRASTRUCTURE & PERSISTENCE SAFEGUARDS
+--------------------------------------------------------------------------------
+- PostgreSQL container upsk-sdf-postgres (81e17829b877) preserved without reset or data loss.
+- Redis container bootcamp-redis (6af2859a8b72) running on port 6379.
+- Backups preserved: links.py.bak, config.py.bak.
+- All prior module evidence files intact.
+
+--------------------------------------------------------------------------------
+5. DOCUMENTED CONSISTENCY LIMITATION & PRODUCTION-HARDENING RISK
+--------------------------------------------------------------------------------
+- PostgreSQL Update Commit Precedes Redis Invalidation:
+  In update_link (PATCH /links/{id}), db.commit() commits changes to PostgreSQL
+  before invalidate_redirect_target() attempts cache key eviction.
+- Single Invalidation Attempt:
+  Redis invalidation makes a single deletion attempt. There is no in-flight retry loop
+  or exponential backoff.
+- Error Isolation on Invalidation Failure:
+  If Redis is unavailable or times out during invalidation, the exception is caught,
+  logged as a WARNING with request_id correlation in structured JSON logs, but the
+  API continues and returns HTTP 200 OK.
+- Bounded Stale-Cache Lifetime:
+  Recovery relies on TTL expiration, which is up to 3,600 seconds (1 hour) for standard
+  links, or bounded by seconds_until_expiry for expiring links.
+- Absence of Async Retry Worker / Transactional Outbox:
+  No transactional outbox table or background retry queue (e.g., Celery/ARQ/streams)
+  currently exists to asynchronously guarantee eventual cache eviction.
+================================================================================

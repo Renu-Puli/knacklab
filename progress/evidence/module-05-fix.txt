@@ -1,0 +1,107 @@
+================================================================================
+MODULE 05 – STEP 6: FIX REPAIR & VERIFICATION EVIDENCE
+================================================================================
+Timestamp: 2026-11-18T16:08:15+05:30
+Assigned Difficulty: Easy – Swallowed Exception in links.py
+
+1. ROOT CAUSE ANALYSIS
+--------------------------------------------------------------------------------
+In `apps/api/app/routers/links.py`, inside the `create_link` endpoint:
+When an unexpected database transaction failure occurred during `db.commit()`, the
+code caught the exception, rolled back the transaction, but then silently swallowed
+the error. Instead of propagating the exception to the application's global exception
+handler, the endpoint fabricated a dummy `LinkResponse` with `id=999999` and returned
+HTTP 201 Created to the caller.
+
+Consequences:
+- The API claimed the operation succeeded (HTTP 201), but PostgreSQL never persisted the row.
+- Comparing response vs DB state revealed 0 rows persisted (`db_record is None`).
+- Subsequent requests to `GET /r/{code}` failed with HTTP 404 Not Found.
+- Error monitoring and alerting were blind to database transaction failures.
+
+
+2. EXACT REPAIR APPLIED
+--------------------------------------------------------------------------------
+File Modified: `apps/api/app/routers/links.py`
+Backup Preserved: `apps/api/app/routers/links.py.bak`
+
+Repaired Code (`create_link` database transaction block):
+```python
+        try:
+            db.add(link)
+            db.commit()
+            db.refresh(link)
+            break
+        except IntegrityError:
+            db.rollback()
+            if attempt == max_retries - 1:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate a unique short code. Please try again."
+                )
+        except Exception:
+            db.rollback()
+            raise
+```
+
+Key Architectural Guarantees:
+1. Removed fabricated `id=999999` dummy response.
+2. Failed database transactions are safely rolled back via `db.rollback()`.
+3. After rollback, the unhandled exception is re-raised via `raise`, propagating to the
+   global unhandled exception handler in `apps/api/app/errors.py`.
+4. The global exception handler captures the diagnostic traceback server-side with
+   correlation `request_id`, suppresses stack traces and database details from the client,
+   and returns:
+   - Status: HTTP 500 Internal Server Error
+   - Error code: `INTERNAL_ERROR`
+   - Error message: `Internal server error`
+   - Request ID: Matching `request_id` in both body and `X-Request-ID` header.
+5. Successful link creations commit cleanly and return valid database-persisted links.
+
+
+3. VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+
+A. reproduce_break.py (Post-Fix Verification)
+- CHECK 1: Normal Link Creation & Database Persistence: PASS
+  * Created Link ID 347 (code: NEBZP4d) in PostgreSQL.
+  * Verified record exists in database with matching long_url.
+  * Verified public redirect GET /r/NEBZP4d returned HTTP 307 with location.
+- CHECK 2: Database Failure Handling (Simulated Failure via Patch): PASS
+  * Returned HTTP 500 Internal Server Error (not HTTP 201).
+  * Error code: INTERNAL_ERROR
+  * Message: "Internal server error" (safe generic message).
+  * Request ID: req_fix_verify_db_fail_500 (matched in body and X-Request-ID header).
+  * Zero stack traces or database details leaked in client JSON.
+  * Server logs captured error with matching request ID.
+
+B. Module 05 Full Verification Suite (verify_module_05.py)
+- TEST A: Validation error returned 422 with safe envelope and X-Request-ID: PASS
+- TEST A2: Legacy /links route returns 422 with identical safe envelope: PASS
+- TEST B: Server error returned generic 500; zero stack traces; logs contain request_id: PASS
+- TEST C: Confirmed sentinel 'DO_NOT_LOG_ME_123' absent from all logs; metadata present: PASS
+- TEST D1: Valid custom X-Request-ID preserved: PASS
+- TEST D2: Malicious X-Request-ID safely rejected and sanitized: PASS
+- TEST E1: 401 returns UNAUTHORIZED envelope with WWW-Authenticate and X-Request-ID: PASS
+- TEST E2: 404 returns NOT_FOUND envelope with X-Request-ID: PASS
+- TEST E3: 410 returns GONE envelope with X-Request-ID: PASS
+- TEST E4: 429 returns RATE_LIMITED envelope with Retry-After header: PASS
+Score: 9 / 9 passed (0 failed).
+
+C. Module 04 Full Verification Suite (verify_module_04.py)
+- All 13 authentication, tenant isolation, public redirect, rate limiting, and click tracking checks: PASS (13/13).
+
+D. Module 03 Regression Suites (run_fix_test.py & verify_module_03.py)
+- run_fix_test.py: 4 / 4 passed.
+- verify_module_03.py: 5 / 5 passed.
+
+Grand Total: 33 checks passed, 0 failed across all suites.
+
+
+4. SAFEGUARD CONFIRMATION
+--------------------------------------------------------------------------------
+- Original `links.py.bak` preserved intact.
+- Docker container `upsk-sdf-postgres` running continuously without reset.
+- PostgreSQL database schemas, records, and migrations preserved.
+- No secrets or credentials exposed.
+================================================================================

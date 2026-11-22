@@ -1,0 +1,11 @@
+=== REPRODUCING MODULE 04 BREAK SYMPTOM ===
+Attempting to initialize application and load configuration...
+
+[CONFIRMED BREAK SYMPTOM] Application startup failed with RuntimeError:
+Startup Configuration Error: Invalid or missing environment configuration.
+1 validation error for Settings
+API_KEY_PRIMARY
+  Field required [type=missing, input_value={'port': '8000', 'DATABASE_URL': 'postgres://postgres:postgres@localhost:5432/upsk_sdf', 'mongodb_uri': 'mongodb://localhost:27017/upsk_sdf', 'redis_url': 'redis://localhost:6379', 'jwt_secret': 'replace-me-locally', 'api_key_a': 'replace-me-locally', 'api_key_b': 'replace-me-locally'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing
+
+Symptom Confirmed: Misconfigured environment alias prevents server startup!

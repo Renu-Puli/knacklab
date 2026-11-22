@@ -1,0 +1,10 @@
+{
+  "summary": "Completed Interlude: Therac-25 — When Software Kills. Recorded structured reflections on falsifiable hypotheses and disconfirming tests, silent safety nets masking upstream defects, and treating user reports as vital qualitative telemetry when dashboards show green.",
+  "evidence": [
+    "Analyzed Therac-25 failure mechanics: removal of hardware interlocks, 8-second keyboard edit race condition, and unattenuated 25 MeV beam overdoses",
+    "Compiled approved answers to all 3 official reflection questions in progress/evidence/interlude-therac-25.md",
+    "Connected disconfirming test principles directly to Module 01 concurrent pagination simulation and empirical offset drift observation",
+    "Identified production safety nets (Redis caching, async queue retries, fallback returns) and their failure risks if removed"
+  ],
+  "artifact": "progress/evidence/interlude-therac-25.md"
+}

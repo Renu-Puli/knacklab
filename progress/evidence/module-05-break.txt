@@ -1,0 +1,88 @@
+================================================================================
+MODULE 05 – STEP 5: BREAK REPRODUCTION & SYMPTOM EVIDENCE
+================================================================================
+Timestamp: 2026-11-18T16:03:30+05:30
+Assigned Difficulty: Easy – Swallowed Exception (Returns 200/201 but hides failure)
+Instructor Diagnostic Hint: "Compare response vs DB state."
+
+1. INJECTED BUG DESCRIPTION
+--------------------------------------------------------------------------------
+In `apps/api/app/routers/links.py`, inside the `create_link` endpoint:
+A database write failure occurs during the transaction commit. Instead of allowing
+the exception to propagate to the registered exception handlers (which would log the
+diagnostic context and return a safe HTTP 500 error envelope with code "INTERNAL_ERROR"),
+the exception is caught and silently swallowed.
+
+The endpoint constructs a dummy LinkResponse, pretends the operation succeeded,
+and returns HTTP 201 Created with uncommitted metadata to the client.
+
+File Modified:
+- `apps/api/app/routers/links.py`
+
+Backup Location:
+- `apps/api/app/routers/links.py.bak` (Verified SHA-256 match before modification)
+
+
+2. AFFECTED API BEHAVIOR & SECURITY / RELIABILITY PROPERTY
+--------------------------------------------------------------------------------
+- Violates HTTP Semantics: Returns HTTP 201 Created for an operation that failed.
+- Violates Data Consistency: The caller assumes the short link was generated and stored,
+  but PostgreSQL has no record of it (silent data loss).
+- Breaks Public Redirection: Any user clicking the returned short URL receives
+  HTTP 404 Not Found because the link was never persisted to the database.
+- Defeats System Observability: Critical database failures are hidden from downstream
+  monitoring, automated alerting, and client retries.
+
+
+3. REPRODUCTION COMMAND
+--------------------------------------------------------------------------------
+Command:
+cd apps/api; .venv/Scripts/python.exe scripts/reproduce_break.py
+
+
+4. ACTUAL REPRODUCTION OUTPUT & OBSERVABLE SYMPTOM
+--------------------------------------------------------------------------------
+======================================================================
+=== REPRODUCING MODULE 05 BREAK SYMPTOM ===
+Assigned Difficulty: Easy – Swallowed Exception (Hiding Failure)
+Instructor Diagnostic Hint: 'Compare response vs DB state.'
+======================================================================
+
+[STEP 1] Client sends POST /api/v1/links with valid API key and payload...
+{"timestamp": "2026-11-18T10:33:21.258902+00:00", "level": "INFO", "logger": "apps.api", "message": "POST /api/v1/links completed with status 201 in 338.82ms", "request_id": "req_cd67874de83440ce8e80aa5453acaa2b", "route": "/api/v1/links", "status_code": 201, "latency_ms": 338.82, "method": "POST"}
+{"timestamp": "2026-11-18T10:33:21.274840+00:00", "level": "INFO", "logger": "httpx", "message": "HTTP Request: POST http://testserver/api/v1/links \"HTTP/1.1 201 Created\"", "request_id": "system"}
+HTTP Status Code: 201
+Response Body: {
+  "id": 999999,
+  "code": "tyEbbJa",
+  "short_url": "http://testserver/r/tyEbbJa",
+  "long_url": "https://example.com/break-test-destination",
+  "created_by": "org_a",
+  "created_at": "2026-11-18T10:33:21.231232Z",
+  "expires_at": null,
+  "tags": null
+}
+
+[STEP 2] Comparing response vs DB state for code 'tyEbbJa'...
+Database Query: db.query(Link).filter(Link.code == 'tyEbbJa').first()
+Database Record Found: None
+
+[STEP 3] Client attempts to access generated short link GET /r/tyEbbJa...
+{"timestamp": "2026-11-18T10:33:21.442965+00:00", "level": "INFO", "logger": "apps.api", "message": "GET /r/tyEbbJa completed with status 404 in 63.19ms", "request_id": "req_3dc33cd6fb874c4a98ec59e1c5a2fc4e", "route": "/r/tyEbbJa", "status_code": 404, "latency_ms": 63.19, "method": "GET"}
+{"timestamp": "2026-11-18T10:33:21.447924+00:00", "level": "INFO", "logger": "httpx", "message": "HTTP Request: GET http://testserver/r/tyEbbJa \"HTTP/1.1 404 Not Found\"", "request_id": "system"}
+Redirect Status Code: 404
+Redirect Response Body: {'error': {'code': 'NOT_FOUND', 'message': 'Short code not found', 'request_id': 'req_3dc33cd6fb874c4a98ec59e1c5a2fc4e'}}
+
+======================================================================
+=== BREAK SYMPTOM DIAGNOSTIC EVALUATION ===
+======================================================================
+[CONFIRMED BREAK SYMPTOM]
+1. API returned success status code (HTTP 201 Created) to the caller.
+2. The internal database transaction failed and was SILENTLY SWALLOWED.
+3. DB state check confirmed 0 rows persisted (db_record is None).
+4. Public redirect GET /r/tyEbbJa failed with HTTP 404 Not Found.
+
+CRITICAL SECURITY & RELIABILITY FLAW:
+The API is lying to callers by returning a success response while swallowing
+database exceptions, causing silent data loss and phantom short links.
+================================================================================

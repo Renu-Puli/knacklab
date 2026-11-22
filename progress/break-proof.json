@@ -1,0 +1,9 @@
+{
+  "summary": "Injected and reproduced Module 07 Medium BREAK bug: job not idempotent leading to duplicate records and analytics double-counting on task retries",
+  "evidence": [
+    "Omitted click_event_id and conflict deduplication in record_click_event_task in apps/api/app/worker.py",
+    "Preserved baseline backup in apps/api/app/worker.py.m07.bak",
+    "Executed scripts/reproduce_module_07_break.py: confirmed a single click event replayed on retry inserts a second database row and inflates analytics count from 1 to 2",
+    "Documented full reproduction sequence and logs in progress/evidence/module-07-break.txt"
+  ]
+}

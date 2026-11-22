@@ -1,0 +1,5 @@
+CONFIG_OK: database_url=postgres://postgres:postgres@localhost:5432/upsk_sdf
+CONFIG_OK: port=8000
+APP_IMPORT_OK
+DIRECT_HEALTH_RESULT: {'ok': True}
+ALL_TESTS_PASSED

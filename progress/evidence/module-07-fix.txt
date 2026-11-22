@@ -1,0 +1,139 @@
+================================================================================
+MODULE 07 – STEP 6: FIX FINAL VERIFICATION EVIDENCE
+Date: 2026-11-20
+Bug: Medium – Non-Idempotent Analytics Worker Job (Duplicate Records on Retry)
+Status: RESOLVED & VERIFIED (ALL TEST SUITES & REGRESSIONS PASSING)
+================================================================================
+
+1. ROOT CAUSE & BUG CONTEXT
+--------------------------------------------------------------------------------
+During STEP 5 (BREAK, Medium difficulty), `apps/api/app/worker.py` was modified:
+- `click_event_id` was omitted from the `insert(ClickEvent).values(...)` statement.
+- The PostgreSQL conflict deduplication clause `.on_conflict_do_nothing(index_elements=["click_event_id"])`
+  was removed.
+
+Because Celery / Redis operates under at-least-once delivery semantics, any task
+retry (e.g. following a worker crash, network blip, or timeout before ACK) caused the
+worker to insert a second, duplicate row into PostgreSQL. This corrupted analytics metrics
+by double-counting clicks and violating idempotency requirements.
+
+2. PRE-FIX INSPECTION FINDINGS
+--------------------------------------------------------------------------------
+Phase 1 requirements were satisfied via comprehensive inspection:
+
+a) Job Payload & Producer:
+   - Producer: `apps/api/app/routers/redirect.py` in `_dispatch_click_event()`.
+   - Event Identifier: `click_event_id = f"click_{request_id}"`, tying the click event
+     directly to the unique HTTP redirect request ID.
+   - Privacy: Client IP is hashed via SHA-256 (`hashlib.sha256(ip.encode()).hexdigest()`),
+     preventing raw IP storage.
+   - Payload: Contains `click_event_id`, `link_id`, `clicked_at`, `user_agent`, `referrer`, and `ip_hash`.
+
+b) Worker & Producer Queue Matching:
+   - Both producer and worker connect to Celery default queue `celery` on broker
+     `redis://localhost:6379/0`.
+   - Task binding: `name="app.worker.record_click_event_task"`.
+   - Consumer queue verified: `celery exchange=celery(direct) key=celery`.
+
+c) PostgreSQL Uniqueness Constraints & Indexes:
+   - Unique Index: `click_events_click_event_id_key` (UNIQUE btree on `click_event_id`).
+   - Normal Index: `ix_click_events_click_event_id` (btree on `click_event_id`).
+   - Database enforces row-level uniqueness on `click_event_id` in PostgreSQL.
+
+3. FIX APPLIED
+--------------------------------------------------------------------------------
+In `apps/api/app/worker.py`, restored atomic idempotent insertion in `record_click_event_task`:
+
+```python
+    db: Session = SessionLocal()
+    try:
+        # Atomic idempotency: insert with ON CONFLICT (click_event_id) DO NOTHING
+        stmt = insert(ClickEvent).values(
+            click_event_id=click_event_id,
+            link_id=link_id,
+            clicked_at=clicked_at_dt,
+            user_agent=user_agent[:512] if user_agent else None,
+            referrer=referrer[:1024] if referrer else None,
+            ip_hash=ip_hash,
+        )
+        if click_event_id:
+            stmt = stmt.on_conflict_do_nothing(index_elements=["click_event_id"])
+        stmt = stmt.returning(ClickEvent.id)
+
+        result = db.execute(stmt)
+        inserted_id = result.scalar_one_or_none()
+        db.commit()
+
+        if inserted_id is None and click_event_id:
+            logger.info(f"Duplicate click event ignored for click_event_id={click_event_id}")
+            return {"status": "deduplicated", "click_event_id": click_event_id}
+
+        return {"status": "recorded", "click_event_id": click_event_id, "link_id": link_id, "id": inserted_id}
+```
+
+Key Architectural Properties:
+1. Database-Level Enforcement: Leverages PostgreSQL's `ON CONFLICT (click_event_id) DO NOTHING`.
+2. Clean Worker Return: If conflict occurs, `inserted_id` is `None`, and worker returns
+   `{"status": "deduplicated", "click_event_id": click_event_id}` without raising an error.
+3. No Double Counting: Database row count and `/links/{id}/analytics` metrics remain exactly 1.
+
+4. TARGETED VERIFICATION: BEFORE VS AFTER
+--------------------------------------------------------------------------------
+Before Fix (BREAK Phase):
+- First task processing: 1 row inserted, `total_clicks = 1`.
+- Simulated task retry with identical payload: 2nd row inserted, `total_clicks = 2`.
+- Status: FAILURE CONFIRMED (Job was not idempotent).
+
+After Fix (FIX Phase - scripts/verify_module_07_fix.py):
+- Step 1: Created short link `code=sim1bGW, id=775`.
+- Step 2: Baseline analytics: `total_clicks = 0`.
+- Step 3: First attempt (`evt_fix_b229bd956dec`):
+  -> Worker response: `{'status': 'recorded', 'click_event_id': 'evt_fix_b229bd956dec', 'link_id': 775, 'id': 2114}`
+  -> Analytics count: `total_clicks = 1`.
+- Step 4: Redelivery retry simulation with identical payload:
+  -> Worker response: `{'status': 'deduplicated', 'click_event_id': 'evt_fix_b229bd956dec'}`
+- Step 5: Post-retry verification:
+  -> Analytics count: `total_clicks = 1`.
+  -> PostgreSQL rows: 1 row in `click_events`.
+- Status: PASS (Idempotency fully proven).
+
+5. COMPLETE SUITE & REGRESSION RESULTS
+--------------------------------------------------------------------------------
+1. `scripts/verify_module_07_fix.py`:
+   - All assertions passed.
+   - Idempotent deduplication confirmed.
+
+2. `apps/api/verify_module_07.py` (Module 07 Verification Suite):
+   - [Test 1] Hot Path Redirect (Cache Miss & Cache Hit): PASS (HTTP 307 on both)
+   - [Test 2] Worker Task Processing & DB Persistence: PASS (Record saved to PostgreSQL)
+   - [Test 3] Idempotent Delivery & Deduplication: PASS (Duplicate click_event_id ignored)
+   - [Test 4] Privacy Protection: PASS (Raw IP absent, SHA-256 hash stored)
+   - [Test 5] Queue-Down Resilience Drill: PASS (HTTP 307 redirect succeeds even if enqueue fails)
+   - [Test 6] Owner-Scoped Analytics Endpoint: PASS (Correct totals & time window returned)
+   - [Test 7] Multi-Tenant Scoping: PASS (Cross-tenant 404, unauthenticated 401)
+   - [Test 8] Date Range Filtering & Validation: PASS (400 for inverted or malformed dates)
+   - [Test 9] Retention Cleanup Task: PASS (Purged expired clicks older than 30 days)
+   - [Test 10] Celery Worker Integration with Live Redis Broker: PASS (Live task consumed & saved)
+   - Result: 10/10 tests passed.
+
+3. `apps/api/verify_module_06.py` (Module 06 Regression Suite):
+   - [Test 1] Hot Path Redirect: PASS
+   - [Test 2] Cache Invalidation on Update: PASS
+   - [Test 3] Cache Invalidation on Delete: PASS
+   - [Test 4] Tenant Scoping & Isolation in Cache: PASS
+   - [Test 5] Graceful Degradation (Redis Fallback): PASS
+   - [Test 6] Link Expiration in Cache: PASS
+   - Result: 6/6 tests passed.
+
+4. `apps/api/verify_module_05.py` (Module 05 Regression Suite):
+   - Structured logging, correlation IDs, safe error envelopes, rate limiting: PASS
+   - Result: 9/9 checks passed.
+
+6. INFRASTRUCTURE & SAFETY CONFIRMATION
+--------------------------------------------------------------------------------
+- PostgreSQL container (`upsk-sdf-postgres`): Running, healthy, port 5432.
+- Redis container (`bootcamp-redis`): Running, healthy, port 6379.
+- No tables or databases were dropped, truncated, or recreated.
+- Existing historical data, migrations, and tenant isolation remain completely intact.
+- Baseline backup `apps/api/app/worker.py.m07.bak` preserved.
+================================================================================

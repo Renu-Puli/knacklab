@@ -1,0 +1,131 @@
+================================================================================
+MODULE 07 – STEP 3: BUILD EVIDENCE
+Background Jobs & Analytics (Asynchronous Celery/Redis Queue & Click Analytics)
+================================================================================
+Timestamp: 2026-11-20T12:58:00Z
+Product Scenario: b2b_multi_tenant
+Jobs Strategy Decision: Option B – async_queue (decisions.module_07.jobs_strategy = "async_queue")
+Retention Policy: 30 days (decisions.module_07.retention_days = 30)
+PostgreSQL Database: upsk_sdf (Container: upsk-sdf-postgres, Port 5432)
+Redis Broker & Cache: redis:alpine (Container: bootcamp-redis, Port 6379, redis://localhost:6379)
+
+--------------------------------------------------------------------------------
+1. ARCHITECTURAL IMPLEMENTATION OVERVIEW
+--------------------------------------------------------------------------------
+A. Hot Path Redirect Decoupling (apps/api/app/routers/redirect.py):
+   - Fast Redirect Hot Path:
+     Public short link redirects (GET /r/{code}) resolve target destinations via Redis cache
+     (falling back to PostgreSQL on miss) and return HTTP 307 Temporary Redirect immediately.
+   - Non-blocking Asynchronous Dispatch:
+     Click event persistence is completely removed from the redirect response path.
+     A lightweight event payload is dispatched to Celery/Redis via record_click_event_task.delay(payload).
+   - Correlation ID & Stable Click Identifiers:
+     Each event generates a deterministic idempotency key using the correlation Request ID:
+     click_event_id = f"click_{request_id}".
+   - Privacy Protection (Zero Raw IP Persistence):
+     extract_ip_hash() hashes client IP via SHA-256. Raw client IP is never included in the queue
+     payload and is never written to PostgreSQL.
+   - Queue-Down Resilience & Best-Effort Degradation:
+     Task dispatch is wrapped in try...except Exception. If the Redis broker or Celery worker
+     is unreachable, a structured warning is logged and the redirect still succeeds immediately
+     with HTTP 307. Public traffic is never degraded by analytics queue outages.
+
+B. Celery App & Background Worker (apps/api/app/celery_app.py & app/worker.py):
+   - Celery Application:
+     Configured with Redis broker (redis://localhost:6379/0), task_serializer="json",
+     timezone="UTC", task_acks_late=True, and task_reject_on_worker_lost=True.
+   - Idempotent Click Event Recording (record_click_event_task):
+     Consumes click payloads and inserts into PostgreSQL using:
+     INSERT INTO click_events (...) ON CONFLICT (click_event_id) DO NOTHING RETURNING id;
+     Guarantees that re-delivered or retried tasks cleanly deduplicate without raising exceptions
+     or incrementing click counts.
+   - Error Handling & Retries:
+     Configured with max_retries=3 and exponential/fixed backoff for transient DB connection drops.
+   - Retention Cleanup Task (purge_expired_clicks_task):
+     Executes configurable retention cleanup (default 30 days):
+     DELETE FROM click_events WHERE clicked_at < (now - retention_days);
+     Purges expired analytical data in an atomic transaction while keeping parent links and
+     recent click events intact.
+
+C. Additive Database Schema & Alembic Migration:
+   - Migration: apps/api/migrations/versions/a1b2c3d4e5f6_add_click_event_id_to_click_events.py
+   - Schema Changes:
+     ALTER TABLE click_events ADD COLUMN IF NOT EXISTS click_event_id VARCHAR(64) UNIQUE;
+     CREATE INDEX IF NOT EXISTS ix_click_events_click_event_id ON click_events(click_event_id);
+   - Preserved all historical click_events (360 existing rows) and all existing link records.
+
+D. Protected Owner-Scoped Analytics Endpoint (apps/api/app/routers/links.py):
+   - Route: GET /links/{id}/analytics
+   - Authentication & Tenant Scoping:
+     Requires valid API key (require_api_key). Validates link ownership (link.created_by == principal.org_id).
+     Cross-tenant access returns HTTP 404 Not Found to prevent link ID enumeration.
+   - Date Range Filtering & Validation:
+     Supports ?from=YYYY-MM-DD&to=YYYY-MM-DD (defaults to past 30 days).
+     Validates ISO date format and ensures from <= to (returns HTTP 400 Bad Request on invalid input).
+   - Metrics Aggregation:
+     Returns schema: {"link_id": int, "from": str, "to": str, "total_clicks": int, "last_clicked_at": Optional[str]}.
+
+--------------------------------------------------------------------------------
+2. LIVE VERIFICATION RESULTS: MODULE 07 TEST SUITE
+--------------------------------------------------------------------------------
+Command: python apps/api/verify_module_07.py
+Status: PASS (10/10 tests passed)
+
+Test Breakdown:
+[Test 1] Hot Path Redirect (Cache Miss & Cache Hit):
+  -> Cache miss returns HTTP 307; populates Redis; enqueues async event.
+  -> Cache hit returns HTTP 307 directly from Redis in ~11ms; enqueues async event.
+  [PASS]
+[Test 2] Worker Task Processing & Database Persistence:
+  -> record_click_event_task successfully inserts ClickEvent into PostgreSQL.
+  -> Validated link_id, user_agent, referrer, and ip_hash stored accurately.
+  [PASS]
+[Test 3] Idempotent Delivery & Deduplication:
+  -> Re-played exact same click_event_id payload.
+  -> Worker detected conflict: returned {"status": "deduplicated"}.
+  -> Database row count for event remained exactly 1.
+  [PASS]
+[Test 4] Privacy Protection:
+  -> Database verified: ip_hash is 64-char SHA-256 hash.
+  -> Raw IP address (127.0.0.1) is completely absent from database.
+  [PASS]
+[Test 5] Queue-Down Resilience Drill:
+  -> Simulated broker outage (ConnectionError on delay()).
+  -> Redirect returned HTTP 307 successfully with correct Location header.
+  -> Zero 500 errors returned to the client.
+  [PASS]
+[Test 6] Owner-Scoped Analytics Endpoint:
+  -> GET /links/{id}/analytics returned HTTP 200 with accurate total_clicks and last_clicked_at.
+  [PASS]
+[Test 7] Multi-Tenant Scoping & Security on Analytics:
+  -> Tenant B attempting to access Tenant A's link analytics returned HTTP 404 Not Found.
+  -> Unauthenticated request returned HTTP 401 Unauthorized.
+  [PASS]
+[Test 8] Date Range Filtering & Validation:
+  -> Valid date window returned accurate subset count.
+  -> Inverted range (from > to) returned HTTP 400 Bad Request.
+  -> Malformed date string returned HTTP 400 Bad Request.
+  [PASS]
+[Test 9] Retention Cleanup Task (purge_expired_clicks_task):
+  -> Seeded 45-day-old click event and 5-day-old click event.
+  -> Ran purge_expired_clicks_task(retention_days=30).
+  -> Expired event was deleted; 5-day-old event and parent Link remained intact.
+  [PASS]
+[Test 10] Live Celery Worker Integration with Live Redis Broker:
+  -> Enqueued task to Redis broker via delay().
+  -> Spawned background Celery worker process (--pool=solo).
+  -> Worker pulled task from Redis queue and persisted record into PostgreSQL within 1.5s.
+  [PASS]
+
+--------------------------------------------------------------------------------
+3. REGRESSION TEST RESULTS
+--------------------------------------------------------------------------------
+- Module 06 Verification Suite (apps/api/verify_module_06.py):
+  -> 6/6 tests passed (Cache-aside, PATCH invalidation, DELETE invalidation, Tenant Scoping, Redis Fallback, Expiry).
+- Module 05 Verification Suite (apps/api/verify_module_05.py):
+  -> 9/9 checks passed (Structured logging, correlation IDs, safe error envelopes, rate limiting).
+- Database & Container Safety:
+  -> PostgreSQL database `upsk_sdf` intact.
+  -> Redis container `bootcamp-redis` intact.
+  -> Zero data loss, zero table drops, zero container deletions.
+================================================================================

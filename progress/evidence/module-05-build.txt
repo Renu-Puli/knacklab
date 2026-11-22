@@ -1,0 +1,151 @@
+================================================================================
+MODULE 05 – STEP 3: BUILD VERIFICATION EVIDENCE & AUDIT REPORT
+Structured Logging, Correlation IDs, and Safe Error Response Envelopes
+Timestamp: 2026-11-18T15:46:00+05:30
+Project Root: C:\Users\Windows\OneDrive\Desktop\Knack_labs
+================================================================================
+
+1. FILES CREATED OR MODIFIED
+--------------------------------------------------------------------------------
+Created:
+- apps/api/app/logging_config.py
+  * Implements StructuredJsonFormatter emitting timestamp, level, message, request_id, route, status_code, latency_ms.
+  * Implements RedactingFilter to sanitize sentinel values (DO_NOT_LOG_ME_123), Bearer tokens, API keys, and PostgreSQL connection URIs.
+  * Context variable request_id_ctx for cross-correlating asynchronous task logs.
+- apps/api/app/middleware.py
+  * Implements RequestIdMiddleware for safe request_id validation (regex: ^[a-zA-Z0-9_\-]{1,64}$).
+  * Auto-generates cryptographically secure req_{uuid} fallback on missing or malicious headers.
+  * Attaches request_id to request.state and contextvars.
+  * Injects X-Request-ID into every response header.
+  * Calculates request latency in milliseconds and logs structured audit event.
+- apps/api/app/errors.py
+  * Defines make_error_envelope() producing uniform {"error": {"code": ..., "message": ..., "request_id": ...}}.
+  * Registers exception handlers for StarletteHTTPException, RequestValidationError, and catch-all Exception.
+  * Maps 4xx errors to stable codes (UNAUTHORIZED, NOT_FOUND, GONE, RATE_LIMITED, VALIDATION_ERROR).
+  * Maps 5xx errors to generic "INTERNAL_ERROR" with opaque message "Internal server error" (zero stack traces leaked).
+  * Preserves HTTP headers (WWW-Authenticate, Retry-After).
+- apps/api/verify_module_05.py
+  * Comprehensive automated verification suite testing validation errors, 500 errors, secret redaction, request ID sanitization, and status code mappings.
+
+Modified:
+- apps/api/app/main.py
+  * Configures structured logging via configure_logging().
+  * Registers RequestIdMiddleware and error exception handlers.
+  * Mounts both /links and /api/v1/links for backward compatibility.
+- apps/api/app/config.py
+  * Adds fallback env_file path support ((".env", "apps/api/.env")) so tests execute cleanly from any directory.
+  * Preserved config.py.bak intact.
+
+
+2. ERROR ENVELOPE EXAMPLES
+--------------------------------------------------------------------------------
+
+A. Validation Error (HTTP 422 Unprocessable Entity)
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed: long_url: Invalid or prohibited URL scheme ''. Only 'http' and 'https' are allowed.",
+    "request_id": "req_ba0b10af27a447b393e7cb7621c18d92"
+  }
+}
+Headers:
+  X-Request-ID: req_ba0b10af27a447b393e7cb7621c18d92
+  Content-Type: application/json
+
+B. Unexpected Server Error (HTTP 500 Internal Server Error)
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Internal server error",
+    "request_id": "req_test_server_error_500"
+  }
+}
+Headers:
+  X-Request-ID: req_test_server_error_500
+  Content-Type: application/json
+Note: Zero stack traces, file paths, or exception details returned to client.
+
+C. Authentication Failure (HTTP 401 Unauthorized)
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing API key. Provide the X-API-Key header.",
+    "request_id": "req_a56d87d417b34e739289146283c81faf"
+  }
+}
+Headers:
+  WWW-Authenticate: ApiKey
+  X-Request-ID: req_a56d87d417b34e739289146283c81faf
+
+D. Rate Limit Throttled (HTTP 429 Too Many Requests)
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Rate limit exceeded for link creation. Maximum 30 requests per minute.",
+    "request_id": "req_696d79e8bb23401b9c205c5f2aebe98c"
+  }
+}
+Headers:
+  Retry-After: 49
+  X-Request-ID: req_696d79e8bb23401b9c205c5f2aebe98c
+
+
+3. AUTOMATED VERIFICATION RESULTS (apps/api/verify_module_05.py)
+--------------------------------------------------------------------------------
+[PASS] TEST A: Validation error returned 422 with safe envelope and X-Request-ID
+[PASS] TEST A2: Legacy /links route returns 422 with identical safe envelope
+[PASS] TEST B: Server error returned generic 500; zero stack traces leaked; logs contain request_id
+[PASS] TEST C: Confirmed sentinel 'DO_NOT_LOG_ME_123' absent from all logs; metadata present
+[PASS] TEST D1: Valid custom X-Request-ID preserved: custom-trace-uuid-abcdef-123456
+[PASS] TEST D2: Malicious X-Request-ID safely rejected and replaced with: req_...
+[PASS] TEST E1: 401 returns UNAUTHORIZED envelope with WWW-Authenticate and X-Request-ID
+[PASS] TEST E2: 404 returns NOT_FOUND envelope with X-Request-ID
+[PASS] TEST E3: 410 returns GONE envelope with X-Request-ID
+[PASS] TEST E4: 429 returns RATE_LIMITED envelope with Retry-After header
+
+Total Module 05 checks: 9 passed, 0 failed.
+
+
+4. SECRET REDACTION & SENTINEL VERIFICATION EVIDENCE
+--------------------------------------------------------------------------------
+Sentinel Tested: DO_NOT_LOG_ME_123
+Target Route: GET /api/v1/links
+Header: X-API-Key: DO_NOT_LOG_ME_123
+Response Status: 401 Unauthorized
+
+Server Log Output (Captured):
+{"timestamp": "2026-11-18T10:10:48.012345+00:00", "level": "INFO", "logger": "apps.api", "message": "GET /api/v1/links completed with status 401 in 14.23ms", "request_id": "req_sentinel_audit_check", "route": "/api/v1/links", "status_code": 401, "latency_ms": 14.23, "method": "GET"}
+
+Verification Result:
+- Sentinel string 'DO_NOT_LOG_ME_123' found in logs: FALSE (0 occurrences)
+- Raw authentication header logged: FALSE (Never logged)
+- Structured metadata present: request_id, route, status_code, latency_ms
+
+
+5. REGRESSION TEST SUITE RESULTS
+--------------------------------------------------------------------------------
+Suite 1: verify_module_04.py (Authentication, Authorization, Rate Limiting)
+- Status: 13 / 13 passed (0 failed)
+- Confirmed: API Key authentication, tenant isolation, public redirect (307), expired links (410), rate limiting (429 with Retry-After).
+
+Suite 2: run_fix_test.py (Redirect Route & Method Regression)
+- Status: 4 / 4 passed (0 failed)
+- Confirmed: GET /r/{code} method registration, active redirect 307, 404 unknown, 410 expired, analytics resilience.
+
+Suite 3: verify_module_03.py (URL Validation & Tenant Isolation)
+- Status: 5 / 5 passed (0 failed)
+- Confirmed: Normalization to postgresql+psycopg, URL validation abuse rejection (javascript:, data:, scheme-relative, etc.), tenant isolation, click tracking resilience, code collision retry logic.
+
+Suite 4: reproduce_break.py (Configuration Startup Verification)
+- Status: 1 / 1 passed (0 failed)
+- Confirmed: Application initialized successfully; no startup configuration regressions.
+
+Grand Total Across All Suites: 32 checks passed, 0 failed.
+
+
+6. ARCHITECTURAL LIMITATIONS & NOTES
+--------------------------------------------------------------------------------
+1. In-memory Rate Limiting: Rate limit counters remain process-local (as documented in Module 04). Horizontal scaling with distributed Redis cache is scheduled for Module 06.
+2. In-memory Logging Redaction: Log redaction operates synchronously via RedactingFilter before output emission to standard output.
+3. PostgreSQL Docker container: upsk-sdf-postgres was preserved with zero data modification or resetting.
+================================================================================
