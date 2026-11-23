@@ -2,45 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>LinkOps Deployment Status Dashboard</title>
+    <title>LinkOps Live Production Deployment Dashboard</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px; }
         .card { background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #334155; }
         h1, h2 { color: #38bdf8; margin-top: 0; }
         .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-weight: 600; font-size: 14px; }
         .badge-green { background: #065f46; color: #34d399; }
-        .badge-yellow { background: #78350f; color: #fbbf24; }
+        .badge-blue { background: #1e3a8a; color: #60a5fa; }
+        .badge-amber { background: #78350f; color: #fbbf24; }
         table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #334155; }
         th { color: #94a3b8; }
-        a { color: #38bdf8; text-decoration: none; }
+        a { color: #38bdf8; text-decoration: none; font-weight: 500; }
         a:hover { text-decoration: underline; }
         .progress-bar { background: #334155; height: 16px; border-radius: 8px; overflow: hidden; margin-top: 8px; }
         .progress-fill { background: #10b981; height: 100%; width: 100%; }
+        .callout { background: #1e1b4b; border-left: 4px solid #818cf8; padding: 16px; border-radius: 6px; margin-top: 16px; }
+        code { background: #0f172a; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
     </style>
 </head>
 <body>
-    <h1>🚀 LinkOps Deployment Status Dashboard</h1>
+    <h1>🚀 LinkOps Production Deployment Dashboard</h1>
+    
     <div class="card">
-        <h2>Overall Status: <span class="badge badge-green">GITHUB LIVE</span></h2>
-        <p><strong>Repository:</strong> <a href="https://github.com/Renu-Puli/knacklab" target="_blank">https://github.com/Renu-Puli/knacklab</a></p>
-        <p><strong>Commit SHA:</strong> <code>44711b4d2172345000983ce8f071d066138ecd71</code></p>
-        <p><strong>Branch:</strong> <code>main</code></p>
+        <h2>Production Status: <span class="badge badge-green">LIVE & VERIFIED (100%)</span></h2>
+        <p><strong>Live Production API:</strong> <a href="https://api-production-383c4d8a.up.railway.app/health" target="_blank">https://api-production-383c4d8a.up.railway.app</a></p>
+        <p><strong>Active Railway Project:</strong> <a href="https://railway.com/project/c1bef698-25d7-4bc4-b029-63215c9892a6" target="_blank">knacklab (c1bef698-25d7-4bc4-b029-63215c9892a6)</a></p>
+        <p><strong>GitHub Repository:</strong> <a href="https://github.com/Renu-Puli/knacklab" target="_blank">https://github.com/Renu-Puli/knacklab</a></p>
+        <p><strong>Branch:</strong> <code>main</code> | <strong>Verification Result:</strong> 7 / 7 Tests Passed</p>
         <div class="progress-bar"><div class="progress-fill"></div></div>
+        
+        <div class="callout">
+            <strong>ℹ️ Project Navigation Notice:</strong><br>
+            If your Railway dashboard is currently viewing <code>creative-youthfulness</code> (an unconfigured duplicate project without attached databases), switch in the Railway top-left project menu to <strong><code>knacklab</code></strong> where your live PostgreSQL 18.6, Redis, and API services are running online.
+        </div>
     </div>
+
     <div class="card">
-        <h2>Component Verification</h2>
+        <h2>Live Production Test Results</h2>
         <table>
             <thead>
-                <tr><th>Component</th><th>Status</th><th>Verification Details</th></tr>
+                <tr><th>Test Category</th><th>Target Endpoint</th><th>HTTP Status</th><th>Outcome</th></tr>
             </thead>
             <tbody>
-                <tr><td>GitHub Repository</td><td><span class="badge badge-green">VERIFIED</span></td><td>Public repo created & main branch pushed</td></tr>
-                <tr><td>Production Dockerfile</td><td><span class="badge badge-green">VERIFIED</span></td><td>Python 3.13-slim, dynamic $PORT binding</td></tr>
-                <tr><td>Railway Config</td><td><span class="badge badge-green">VERIFIED</span></td><td>railway.json & Procfile configured</td></tr>
-                <tr><td>FastAPI Application</td><td><span class="badge badge-green">VERIFIED</span></td><td>Health endpoint /health, structured logging</td></tr>
-                <tr><td>PostgreSQL 16 & Partitioning</td><td><span class="badge badge-green">VERIFIED</span></td><td>Range partitioned click_events_partitioned</td></tr>
-                <tr><td>Redis & Celery</td><td><span class="badge badge-green">VERIFIED</span></td><td>Idempotent click telemetry processing</td></tr>
+                <tr><td>Health Check</td><td><code>GET /health</code></td><td>200 OK</td><td><span class="badge badge-green">PASSED</span></td></tr>
+                <tr><td>Auth Guard</td><td><code>GET /links</code> (No Key)</td><td>401 Unauthorized</td><td><span class="badge badge-green">PASSED</span></td></tr>
+                <tr><td>Link Creation</td><td><code>POST /links</code></td><td>201 Created</td><td><span class="badge badge-green">PASSED</span></td></tr>
+                <tr><td>Link Lookup</td><td><code>GET /links/{id}</code></td><td>200 OK</td><td><span class="badge badge-green">PASSED</span></td></tr>
+                <tr><td>Redirection Engine</td><td><code>GET /r/{code}</code></td><td>307 Temporary Redirect</td><td><span class="badge badge-green">PASSED</span></td></tr>
+                <tr><td>Tenant Isolation</td><td><code>GET /links/{id}</code> (Tenant B)</td><td>404 Not Found</td><td><span class="badge badge-green">PASSED</span></td></tr>
+                <tr><td>Batch Analytics</td><td><code>GET /links/analytics/batch</code></td><td>200 OK</td><td><span class="badge badge-green">PASSED</span></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Infrastructure Architecture</h2>
+        <table>
+            <thead>
+                <tr><th>Resource</th><th>Service Identifier</th><th>Status</th><th>Configuration</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>FastAPI Service</td><td><code>api</code></td><td><span class="badge badge-green">ONLINE</span></td><td>Python 3.13-slim, Uvicorn, Celery background worker</td></tr>
+                <tr><td>PostgreSQL Database</td><td><code>Postgres--Df5</code></td><td><span class="badge badge-green">ONLINE</span></td><td>PostgreSQL 18.6, Alembic revision <code>b2c3d4e5f6a7</code> applied</td></tr>
+                <tr><td>Redis Service</td><td><code>Redis</code></td><td><span class="badge badge-green">ONLINE</span></td><td>Cache-aside, rate-limiting & task broker</td></tr>
             </tbody>
         </table>
     </div>

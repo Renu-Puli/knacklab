@@ -25,5 +25,5 @@ COPY scripts ./scripts
 
 EXPOSE 8000
 
-# Automatically apply migrations on startup before binding uvicorn
-CMD ["sh", "-c", "PYTHONPATH=. python -m alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Automatically apply migrations and start Celery worker before binding uvicorn
+CMD ["sh", "-c", "PYTHONPATH=. python -m alembic upgrade head && (PYTHONPATH=. celery -A app.worker worker --loglevel=INFO -P solo &) && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

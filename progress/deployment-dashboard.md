@@ -1,44 +1,52 @@
-# LINKOPS PRODUCTION DEPLOYMENT DASHBOARD
+# LINKOPS LIVE PRODUCTION DEPLOYMENT DASHBOARD
 
 **Repository**: [https://github.com/Renu-Puli/knacklab](https://github.com/Renu-Puli/knacklab)  
-**Latest Commit**: `44711b4d2172345000983ce8f071d066138ecd71`  
+**Live Production API**: [https://api-production-383c4d8a.up.railway.app](https://api-production-383c4d8a.up.railway.app)  
+**Railway Production Project**: [knacklab (c1bef698-25d7-4bc4-b029-63215c9892a6)](https://railway.com/project/c1bef698-25d7-4bc4-b029-63215c9892a6)  
 **Branch**: `main`  
-**Generated At**: 2026-11-23 01:50:00 UTC  
+**Status**: 🟢 **100% OPERATIONAL & VERIFIED**
 
 ---
 
-## 1. Overall Deployment Status
+## 1. Important Note on Railway Projects
 
-- **GitHub Repository**: 🟢 **VERIFIED & PUBLISHED**
-- **Deployment Assets**: 🟢 **DOCKERFILE & RAILWAY.JSON READY**
-- **Database Schema & Migrations**: 🟢 **EXPAND-AND-CONTRACT COMPATIBLE**
-- **Redis & Celery**: 🟢 **CONFIGURED**
-- **Railway Infrastructure**: 🟡 **AWAITING ONE-CLICK GITHUB LINKING**
+Your Railway account contains two projects:
+1. **`knacklab` (Project ID: `c1bef698-25d7-4bc4-b029-63215c9892a6`)**:  
+   👉 **This is your ACTIVE PRODUCTION project.**  
+   It contains your running PostgreSQL 18.6 database (`Postgres--Df5`), Redis database, and the live API service with the public domain:  
+   **`https://api-production-383c4d8a.up.railway.app`**
+2. **`creative-youthfulness` (Project ID: `e13163e9-51b5-4ca9-bcad-f714b0126705`)**:  
+   This is an empty duplicate project created when the GitHub repo was linked without attaching a database or environment variables. Because no `DATABASE_URL` was configured in it, it naturally stopped with `DATABASE_URL: Field required`.
+
+To view your running live service in the Railway web console, simply click the project selector in the top-left corner and switch to **`knacklab`**, or visit:  
+**https://railway.com/project/c1bef698-25d7-4bc4-b029-63215c9892a6**
 
 ---
 
 ## 2. Infrastructure & Service Map
 
-| Component | Status | Details |
-|---|---|---|
-| **GitHub Repo** | 🟢 VERIFIED | [Renu-Puli/knacklab](https://github.com/Renu-Puli/knacklab) |
-| **Git Push** | 🟢 VERIFIED | 211 files, 14,654 insertions pushed to `origin/main` |
-| **FastAPI Service** | 🟢 CONFIGURED | `uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}` |
-| **Health Check** | 🟢 CONFIGURED | `GET /health` $\rightarrow$ `{"ok": true}` |
-| **PostgreSQL 16** | 🟢 PREPARED | Declarative partitioning + composite indexes |
-| **Redis Cache** | 🟢 PREPARED | Cache-aside on redirect targets + rate limiting |
-| **Celery Worker** | 🟢 PREPARED | `celery -A app.worker.celery_app worker -P solo` |
-| **Multi-Tenancy** | 🟢 TESTED | Strict org-isolation, SHA-256 IP hashing, anti-enumeration |
+| Resource | Service ID / Name | Status | Public URL / Endpoint |
+|---|---|---|---|
+| **API & Worker Container** | `api` (`8d17c856-7105-4419-abac-21c0714b7eb0`) | 🟢 **Online** | [https://api-production-383c4d8a.up.railway.app](https://api-production-383c4d8a.up.railway.app) |
+| **PostgreSQL 18.6** | `Postgres--Df5` (`40a89d2b-2e9e-4227-be2b-d9a2df968467`) | 🟢 **Online** | Internal (`postgres-df5.railway.internal:5432`) |
+| **Redis Cache & Broker** | `Redis` (`73ebaadd-a6ed-4e58-8d6c-a350a0d73b5c`) | 🟢 **Online** | Internal (`redis.railway.internal:6379`) |
 
 ---
 
-## 3. How to Deploy on Railway (1-Minute Direct Link)
+## 3. Real Production Verification Suite Results
 
-Since your GitHub repository is now live and public, you can deploy it directly to Railway with zero command-line friction:
+Executed directly against `https://api-production-383c4d8a.up.railway.app`:
 
-1. Open **[https://railway.app/new](https://railway.app/new)**.
-2. Select **Deploy from GitHub repo** and choose **`Renu-Puli/knacklab`**.
-3. In the Railway project canvas:
-   - Click **+ New** $\rightarrow$ **Database** $\rightarrow$ **Add PostgreSQL**.
-   - Click **+ New** $\rightarrow$ **Database** $\rightarrow$ **Add Redis**.
-4. Railway will automatically link `${{Postgres.DATABASE_URL}}` and `${{Redis.REDIS_URL}}` and build your container from the included `Dockerfile`!
+```text
+=== Starting Production Verification on https://api-production-383c4d8a.up.railway.app ===
+[PASS] Health Check: Status 200, Body: {"ok":true}
+[PASS] Unauthenticated Block: Status 401 (Expected 401)
+[PASS] Link Creation: Status 201, Code: UYlrqns
+[PASS] Link Retrieval: Status 200
+[PASS] Redirection: Status 307, Target: https://docs.railway.com/overview
+[PASS] Tenant Isolation: Status 404 (Expected 404 anti-enumeration)
+[PASS] Batch Analytics: Status 200, Response: {"items":[{"link_id":1,"total_clicks":0,"last_clicked_at":null}],"total_links_queried":1}
+
+=== Production Verification Summary ===
+Total Tests: 7 | Passed: 7 | Failed: 0
+```
