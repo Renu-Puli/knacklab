@@ -1,7 +1,7 @@
 {
-  "current_module": 7,
+  "current_module": 10,
   "current_step": "completed",
-  "modules_completed": [1, 2, 3, 4, 5, 6, 7],
+  "modules_completed": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   "next_module": null,
   "track_completed": true,
   "track": "debugging-incident-response",
