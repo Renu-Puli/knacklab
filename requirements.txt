@@ -8,6 +8,7 @@ psycopg[binary]==3.3.8
 alembic==1.20.1
 redis==8.1.0
 celery==5.7.0
+packaging>=24.0
 httpx==0.28.1
 starlette==1.10.0
 python-dateutil==2.9.0.post0
